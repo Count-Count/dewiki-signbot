@@ -11,6 +11,7 @@ import time
 #import datetime
 #import Queue
 import random
+import signal
 import threading
 import hashlib
 
@@ -21,10 +22,23 @@ from pywikibot.diff import PatchManager
 from redis import Redis
 from redisconfig import KEYSIGN
 
+
+TIMEOUT = 60 # We expect at least one rc entry every minute
+
+
+class TimeoutError(Exception):
+    pass
+
+
+def on_timeout(signum, frame):
+    raise TimeoutError
+
+
 class Controller():
     def __init__(self):
 #        self.total = 20
         self.site = pywikibot.Site(user="SignBot")
+        self.site.login()  # T153541
         self.useroptin = None
         self.useroptout = None
         self.redis = Redis(host="tools-redis")
@@ -38,9 +52,14 @@ class Controller():
         pass
 
     def run(self):
+        signal.signal(signal.SIGALRM, on_timeout)
+        signal.alarm(TIMEOUT)
+
         rc = site_rc_listener(self.site)
 
         for change in rc:
+            signal.alarm(TIMEOUT)
+
             # Talk page or project page, bot edits excluded
             if (not change['bot']) and (change['namespace'] == 4 or change['namespace'] % 2 == 1) and (change['type'] in ['edit', 'new']) and (not '!nosign!' in change['comment']):
                 t = BotThread(self.site, change, self)
@@ -166,7 +185,7 @@ class BotThread(threading.Thread):
                 talktext = ''
 
             talktext += u'{{subst:Please sign}} --~~~~'
-            self.userPut(talk, talk.text, talktext, comment=u"Added {{subst:[[Template:Please sign|Please sign]]}} note.", minor=False, force=True)
+            self.userPut(talk, talk.text, talktext, comment=u"Added {{subst:[[Template:Please sign|Please sign]]}} note.", minor=False)
 
     def output(self, info):
         pywikibot.output(u"%s: %s" % (self.page, info))
@@ -174,7 +193,7 @@ class BotThread(threading.Thread):
     def getSignature(self, tosignstr, user):
         p = u""
         if tosignstr[-1] != " ": p = u" "
-        timestamp = pywikibot.Timestamp.utcfromtimestamp(self.change['timestamp']).strftime('%H:%M, %d %B %Y')
+        timestamp = pywikibot.Timestamp.utcfromtimestamp(self.change['timestamp']).strftime('%H:%M, %-d %B %Y')
 #        return p + u"{{%s|%s|%s}}" % ("unsignedIP" if user.isAnonymous() else "unsigned", user.username, timestamp)
         return p + u"{{%s|%s|%s}}" % ("unsignedIP2" if user.isAnonymous() else "unsigned2", timestamp, user.username)
 
@@ -209,6 +228,7 @@ class BotThread(threading.Thread):
         if not tempstr: return False # not empty
         if tempstr.startswith('=') and tempstr.endswith('='): return False # not heading
         if tempstr.startswith('|') or tempstr.startswith('{|') or tempstr.endswith('|'): return False # not table/template
+        if tempstr.startswith('----'): return False # not horzontal line
 
         return True
 
@@ -263,6 +283,7 @@ class BotThread(threading.Thread):
 
         page.text = newtext
         try:
+            
             page.save(**kwargs)
             pass
         except pywikibot.Error, e:
