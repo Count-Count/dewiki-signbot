@@ -139,9 +139,9 @@ class BotThread(threading.Thread):
                                self.output(u"User adding templates to his own talk page -- ignored")
                                return
 
-                        excludelisttest = self.matchExcludeRegex(line)
-                        if excludelisttest is not None:
-                            self.output(u"%s -- ignored" % excludelisttest)
+                        excluderegextest = self.matchExcludeRegex(line)
+                        if excluderegextest is not None:
+                            self.output(u"%s -- ignored" % excluderegextest)
                             return
                                
                         if self.isComment(line):
@@ -264,8 +264,8 @@ class BotThread(threading.Thread):
 
     def matchExcludeRegex(self, line):
         # 0.05 chance of updating list
-        if self.controller.excludelist is None or self.chance(0.05):
-            # We do not directly assign to self.controller.excludelist right now to avoid issues with multi-threading
+        if self.controller.excluderegex is None or self.chance(0.05):
+            # We do not directly assign to self.controller.excluderegex right now to avoid issues with multi-threading
             lst  = []
 
             repage = pywikibot.Page(self.site, "User:SignBot/exclude_regex")
@@ -274,10 +274,10 @@ class BotThread(threading.Thread):
                 if line and not line.startswith('#'):
                     lst.append(re.compile(line, re.I))
 
-            self.controller.excludelist = lst
+            self.controller.excluderegex = lst
 
 	line = line.replace('_', ' ')
-        for regex in self.controller.excludelist:
+        for regex in self.controller.excluderegex:
             reobj = regex.search(line)
             if reobj is not None:
                 return reobj.group(0)
@@ -305,7 +305,6 @@ class BotThread(threading.Thread):
 
         page.text = newtext
         try:
-            
             page.save(**kwargs)
             pass
         except pywikibot.Error, e:
