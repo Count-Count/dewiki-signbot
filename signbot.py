@@ -41,6 +41,7 @@ class Controller():
         self.site.login()  # T153541
         self.useroptin = None
         self.useroptout = None
+        self.excluderegex = None
         self.redis = Redis(host="tools-redis")
 
     @property
@@ -132,15 +133,15 @@ class BotThread(threading.Thread):
                 if tag == 'insert':
                     for j in range(j1, j2):
                         line = hunk.b[j]
-                        if self.page == user.getUserTalkPage():
+                        if self.page == user.getUserTalkPage() or self.page.title().startswith(
+                                user.getUserTalkPage().title() + '/'):
                             if "{{" in line.lower():
                                self.output(u"User adding templates to his own talk page -- ignored")
                                return
-                        if "{{published" in line.lower():
-                            self.output(u"{{published -- ignored")
-                            return
-                        if "{{kept" in line.lower():
-                            self.output(u"{{kept -- ignored")
+
+                        excludelisttest = self.matchExcludeRegex(line)
+                        if excludelisttest is not None:
+                            self.output(u"%s -- ignored" % excludelisttest)
                             return
                                
                         if self.isComment(line):
@@ -260,6 +261,27 @@ class BotThread(threading.Thread):
         # TODO: opt-in
         # 0.25 chance of updating list
         return "newsectionlink" in self.page.properties()
+
+    def matchExcludeRegex(self, line):
+        # 0.05 chance of updating list
+        if self.controller.excludelist is None or self.chance(0.05):
+            # We do not directly assign to self.controller.excludelist right now to avoid issues with multi-threading
+            lst  = []
+
+            repage = pywikibot.Page(self.site, "User:SignBot/exclude_regex")
+            for line in repage.get(force=True).split('\n'):
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    lst.append(re.compile(line, re.I))
+
+            self.controller.excludelist = lst
+
+	line = line.replace('_', ' ')
+        for regex in self.controller.excludelist:
+            reobj = regex.search(line)
+            if reobj is not None:
+                return reobj.group(0)
+        return None
 
     def userPut(self, page, oldtext, newtext, **kwargs):
         if oldtext == newtext:
