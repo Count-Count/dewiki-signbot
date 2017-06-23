@@ -16,7 +16,7 @@ import threading
 import hashlib
 
 import pywikibot
-from pywikibot.comms.rcstream import site_rc_listener
+from pywikibot.comms.eventstreams import site_rc_listener
 from pywikibot.diff import PatchManager
 
 from redis import Redis
