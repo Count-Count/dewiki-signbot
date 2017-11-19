@@ -230,6 +230,7 @@ class BotThread(threading.Thread):
         if tempstr.startswith('=') and tempstr.endswith('='): return False # not heading
         if tempstr.startswith('|') or tempstr.startswith('{|') or tempstr.endswith('|'): return False # not table/template
         if tempstr.startswith('----'): return False # not horzontal line
+        if re.match(ur'^__[A-Z]+__$', tempstr): return False # not magic words   
 
         return True
 
