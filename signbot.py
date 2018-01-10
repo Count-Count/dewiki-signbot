@@ -170,6 +170,7 @@ class BotThread(threading.Thread):
             currenttext[currenttext.index(tosignstr)] += self.getSignature(tosignstr, user)
         else:
             self.output(u"Line no longer found, probably signed")
+            return
         
         summary = u'Signing comment by %s - "%s"' % (self.userlink(user), self.change['comment'])
         
