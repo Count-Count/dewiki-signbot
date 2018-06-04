@@ -352,7 +352,8 @@ class BotThread(threading.Thread):
 #        elif self.controller.total <= 0:
 #            raise RuntimeError('Maxium edits reached!')
         else:
-            self.controller.total -= 1
+            # self.controller.total -= 1
+            pass
 
         pywikibot.output('\n\n>>> \03{lightpurple}%s\03{default} <<<'
                          % page.title(asLink=True))
