@@ -96,6 +96,12 @@ class BotThread(threading.Thread):
             if not self.isDiscussion(self.page):
                 self.output('Not a discussion')
                 return
+
+        if {'mw-undo', 'mw-rollback'}.intersection(self.getTags()):
+            self.output('undo / rollback')
+            return
+            
+
         user = pywikibot.User(self.site, self.change['user'])
         if self.isOptout(user):
             self.output('%s opted-out' % user)
@@ -201,6 +207,29 @@ class BotThread(threading.Thread):
     def output(self, info):
         pywikibot.output('%s: %s' % (self.page, info))
 
+    def getTags(self):
+        req = self.site._simple_request(
+            action='query',
+            prop='revisions',
+            titles=self.page,
+            rvprop='tags',
+            rvstartid=self.change['revision']['new'],
+            rvendid=self.change['revision']['new'],
+            rvlimit=1
+        )
+        try:
+            res = req.submit()
+        except Exception as e:
+            pywikibot.exception(e)
+            return []
+        else:
+            try:
+                p = res['query']['pages']
+                r = p[p.keys()[0]]['revisions']
+                return r[0]['tags']
+            except KeyError:
+                return []
+
     def getSignature(self, tosignstr, user):
         p = ''
         if tosignstr[-1] != ' ':
@@ -249,7 +278,7 @@ class BotThread(threading.Thread):
     def isComment(self, line):
         # remove non-functional parts and categories
         tempstr = re.sub(r'\[\[[Cc]ategory:[^\]]+\]\]', '',
-                         pywikibot.textlib.removeDisabledParts(line).strip())
+                         pywikibot.textlib.removeDisabledParts(line)).strip()
         # not empty
         if not tempstr:
             return False
