@@ -271,6 +271,8 @@ class BotThread(threading.Thread):
                 if link.title != 'Beiträge/' + user.username:
                     continue
             else:
+                if link.namespace == -1 and link.title == 'Beiträge/' + user.username:
+                    return True
                 if link.namespace not in [2, 3]:
                     continue
                 if link.title != user.username:
