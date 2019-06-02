@@ -314,10 +314,10 @@ class BotThread(threading.Thread):
         ):
             self.controller.useroptin = list(
                 pywikibot.Page(self.site, 'Template:YesAutosign')
-                .getReferences(onlyTemplateInclusion=True))
+                .getReferences(only_template_inclusion=True))
             self.controller.useroptout = list(
                 pywikibot.Page(self.site, 'Template:NoAutosign')
-                .getReferences(onlyTemplateInclusion=True))
+                .getReferences(only_template_inclusion=True))
 
         # Check for opt-in {{YesAutosign}} -> False
         if user in self.controller.useroptin:
