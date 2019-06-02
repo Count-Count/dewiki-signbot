@@ -268,7 +268,7 @@ class BotThread(threading.Thread):
             if user.isAnonymous():
                 if link.namespace != -1:
                     continue
-                if link.title != 'Contributions/' + user.username:
+                if link.title != 'Beiträge/' + user.username:
                     continue
             else:
                 if link.namespace not in [2, 3]:
