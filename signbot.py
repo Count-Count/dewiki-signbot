@@ -118,8 +118,10 @@ class BotThread(threading.Thread):
 
         new_text = self.page.getOldVersion(self.change['revision']['new'])
 
-        if '{{speedy' in new_text.lower():
-            self.output('{{speedy -- ignored')
+        if '{{sla' in new_text.lower() \
+          or '{{löschen' in new_text.lower() \
+          or '{{delete' in new_text.lower():
+            self.output('{{sla -- ignored')
             return
 
         diff = PatchManager(old_text.split('\n') if old_text else [],
