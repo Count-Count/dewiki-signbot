@@ -21,8 +21,8 @@ import pywikibot
 from pywikibot.comms.eventstreams import site_rc_listener
 from pywikibot.diff import PatchManager
 
-from redis import Redis
-from redisconfig import KEYSIGN
+#from redis import Redis
+#from redisconfig import KEYSIGN
 
 
 TIMEOUT = 60  # We expect at least one rc entry every minute
@@ -44,7 +44,7 @@ class Controller():
         self.useroptin = None
         self.useroptout = None
         self.excluderegex = None
-        self.redis = Redis(host='tools-redis')
+#        self.redis = Redis(host='tools-redis')
 
     def run(self):
         signal.signal(signal.SIGALRM, on_timeout)
@@ -69,15 +69,16 @@ class Controller():
         time.sleep(10)
 
     def checknotify(self, user):
-        if user.isAnonymous():
-            return False
-        reset = int(time.time()) + 86400
-        key = KEYSIGN + ':'
-        key += hashlib.md5(user.username.encode('utf-8')).hexdigest()
-        p = self.redis.pipeline()
-        p.incr(key)
-        p.expireat(key, reset + 10)
-        return p.execute()[0] >= 3
+        return False
+#        if user.isAnonymous():
+#            return False
+#        reset = int(time.time()) + 86400
+#        key = KEYSIGN + ':'
+#        key += hashlib.md5(user.username.encode('utf-8')).hexdigest()
+#        p = self.redis.pipeline()
+#        p.incr(key)
+#        p.expireat(key, reset + 10)
+#        return p.execute()[0] >= 3
 
 
 class BotThread(threading.Thread):
