@@ -15,6 +15,7 @@ import signal
 import threading
 import hashlib
 import locale
+import pytz
 
 import pywikibot
 from pywikibot.comms.eventstreams import site_rc_listener
@@ -39,6 +40,7 @@ class Controller():
     def __init__(self):
         self.site = pywikibot.Site(user='CountCountBot')
         self.site.login()  # T153541
+        self.timezone = pytz.timezone('Europe/Berlin')
         self.useroptin = None
         self.useroptout = None
         self.excluderegex = None
@@ -234,8 +236,8 @@ class BotThread(threading.Thread):
         p = ''
         if tosignstr[-1] != ' ':
             p = ' '
-        timestamp = pywikibot.Timestamp.utcfromtimestamp(
-            self.change['timestamp']).strftime('%H:%M, %-d. %B %Y')
+        timestamp = pytz.utc.localize(pywikibot.Timestamp.utcfromtimestamp(
+            self.change['timestamp'])).astimezone(self.controller.timezone).strftime('%H:%M, %-d. %B %Y (%Z)')
         return p + '{{unsigniert|%s|%s}}' % (
             user.username,
             timestamp
