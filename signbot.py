@@ -333,7 +333,7 @@ class BotThread(threading.Thread):
             return True
         # Check for 800 user edits -> False
         # -> True
-        return user.editCount(force=self.chance(0.25)) > 800
+#        return user.editCount(force=self.chance(0.25)) > 800
 
     def isFreqpage(self, page):
         # TODO
