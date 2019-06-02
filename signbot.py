@@ -225,7 +225,7 @@ class BotThread(threading.Thread):
         else:
             try:
                 p = res['query']['pages']
-                r = p[p.keys()[0]]['revisions']
+                r = p[list(p.keys())[0]]['revisions']
                 return r[0]['tags']
             except KeyError:
                 return []
