@@ -281,7 +281,7 @@ class BotThread(threading.Thread):
 
     def isComment(self, line):
         # remove non-functional parts and categories
-        tempstr = re.sub(r'\[\[[Cc]ategory:[^\]]+\]\]', '',
+        tempstr = re.sub(r'\[\[[Kk]ategorie:[^\]]+\]\]', '',
                          pywikibot.textlib.removeDisabledParts(line)).strip()
         # not empty
         if not tempstr:
