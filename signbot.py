@@ -341,11 +341,7 @@ class BotThread(threading.Thread):
         if 'newsectionlink' in self.page.properties():
             return True
 
-        if page.title().startswith('Commons:Deletion requests/'):
-            if re.match(r'Commons:Deletion requests/[0-9/]*$', page.title()):
-                return False
-            if '{{Commons:Deletion requests/' in page.text:
-                return False
+        if page.title().startswith('Wikipedia:Löschkandidaten/'):
             return True
 
         return False
