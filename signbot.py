@@ -358,7 +358,7 @@ class BotThread(threading.Thread):
             # now to avoid issues with multi-threading
             lst = []
 
-            repage = pywikibot.Page(self.site, 'User:SignBot/exclude_regex')
+            repage = pywikibot.Page(self.site, 'User:CountCountBot/exclude_regex')
             for line in repage.get(force=True).split('\n'):
                 line = line.strip()
                 if line and not line.startswith('#'):
