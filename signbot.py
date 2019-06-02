@@ -14,6 +14,7 @@ import random
 import signal
 import threading
 import hashlib
+import locale
 
 import pywikibot
 from pywikibot.comms.eventstreams import site_rc_listener
@@ -181,7 +182,7 @@ class BotThread(threading.Thread):
             self.output('Line no longer found, probably signed')
             return
 
-        summary = "Signing comment by %s - '%s'" % (
+        summary = "Bot: Signaturnachtrag für Beitrag von %s: \"%s\"" % (
             self.userlink(user), self.change['comment'])
 
         self.userPut(self.page, self.page.get(),
@@ -198,10 +199,9 @@ class BotThread(threading.Thread):
             except pywikibot.NoPage:
                 talktext = ''
 
-            talktext += '{{subst:Please sign}} --~~~~'
+            talktext += '{{subst:Unterschreiben}}'
             self.userPut(talk, talk.text, talktext,
-                         comment='Added {{subst:[[Template:Please sign|'
-                                 'Please sign]]}} note.',
+                         comment='Bot: Hinweisvorlage {{subst:Unterschreiben}} ergänzt',
                          minor=False)
 
     def output(self, info):
@@ -235,11 +235,10 @@ class BotThread(threading.Thread):
         if tosignstr[-1] != ' ':
             p = ' '
         timestamp = pywikibot.Timestamp.utcfromtimestamp(
-            self.change['timestamp']).strftime('%H:%M, %-d %B %Y')
-        return p + '{{%s|%s|%s}}' % (
-            'unsignedIP2' if user.isAnonymous() else 'unsigned2',
-            timestamp,
-            user.username
+            self.change['timestamp']).strftime('%H:%M, %-d. %B %Y')
+        return p + '{{unsigniert|%s|%s}}' % (
+            user.username,
+            timestamp
         )
 
     def userlink(self, user):
@@ -405,6 +404,7 @@ class BotThread(threading.Thread):
 
 
 def main():
+    locale.setlocale(locale.LC_ALL, 'de_DE.utf8')
     pywikibot.handleArgs()
     Controller().run()
 
