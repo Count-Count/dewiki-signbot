@@ -128,7 +128,7 @@ class BotThread(threading.Thread):
         diff = PatchManager(old_text.split('\n') if old_text else [],
                             new_text.split('\n'),
                             by_letter=True)
-        diff.print_hunks()
+#        diff.print_hunks()
 
         tosignstr = False
         tosignnum = False
