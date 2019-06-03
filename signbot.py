@@ -174,7 +174,7 @@ class BotThread(threading.Thread):
 
         if not self.isFreqpage(self.page):
             self.output('Waiting')
-            time.sleep(60)
+            time.sleep(5 * 60)
             pass
 
         currenttext = self.page.get(force=True).split('\n')
