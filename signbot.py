@@ -408,7 +408,7 @@ class BotThread(threading.Thread):
 
 def main():
     locale.setlocale(locale.LC_ALL, 'de_DE.utf8')
-    pywikibot.handleArgs()
+    pywikibot.handle_args()
     Controller().run()
 
 
