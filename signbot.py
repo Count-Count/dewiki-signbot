@@ -180,15 +180,19 @@ class BotThread(threading.Thread):
         currenttext = self.page.get(force=True).split('\n')
         if currenttext[tosignnum] == tosignstr:
             currenttext[tosignnum] += self.getSignature(tosignstr, user)
+            signedLine = currenttext[tosignnum]
         elif currenttext.count(tosignstr) == 1:
             currenttext[currenttext.index(tosignstr)] += \
                 self.getSignature(tosignstr, user)
+            signedLine = [currenttext.index(tosignstr)]
         else:
             self.output('Line no longer found, probably signed')
             return
 
         summary = "Bot: Signaturnachtrag für Beitrag von %s: \"%s\"" % (
             self.userlink(user), self.change['comment'])
+
+        self.writeLog(self.page, signedLine, summary, self.change['revision']['new'], user, self.change['comment'], self.change['timestamp'])
 
         self.userPut(self.page, self.page.get(),
                      '\n'.join(currenttext), comment=summary)
@@ -239,12 +243,15 @@ class BotThread(threading.Thread):
         p = ''
         if tosignstr[-1] != ' ':
             p = ' '
-        timestamp = pytz.utc.localize(pywikibot.Timestamp.utcfromtimestamp(
-            self.change['timestamp'])).astimezone(self.controller.timezone).strftime('%H:%M, %-d. %B %Y (%Z)')
+        timestamp = self.getSignatureTimestampString(self.change['timestamp'])
         return p + '{{unsigniert|%s|%s}}' % (
             user.username,
             timestamp
         )
+    
+    def getSignatureTimestampString(self, timestamp):
+        return pytz.utc.localize(pywikibot.Timestamp.utcfromtimestamp(timestamp)) \
+            .astimezone(self.controller.timezone).strftime('%H:%M, %-d. %B %Y (%Z)')
 
     def userlink(self, user):
         if user.isAnonymous():
@@ -375,6 +382,18 @@ class BotThread(threading.Thread):
                 return reobj.group(0)
         return None
 
+    def writeLog(self, page, botLine, summary, revision, user, revSummary, revTimestamp):
+        logPage = pywikibot.Page(self.site, 'Benutzer:CountCountBot/Log')
+        oldText = logPage.text
+        text = oldText
+        if not text.endswith('\n'):
+            text += '\n'
+        revTimestampString = self.getSignatureTimestampString(revTimestamp)
+        text += "%s: [https://de.wikipedia.org/w/index.php?title=%s&direction=prev&oldid=%s Unsignierte Bearbeitung] von {{noping|%s}} um %s.<br>\n" % (page.title(as_link=True), page.title(as_url=True), revision, user.username, revTimestampString)
+        text += "Generierte Bot-Bearbeitung: ''(%s)''\n<pre>%s</pre>\n\n" % (summary, botLine)
+        logPage.text = text
+        logPage.save(summary='Neuer Log-Eintrag.')
+        
     def userPut(self, page, oldtext, newtext, **kwargs):
         if oldtext == newtext:
             pywikibot.output('No changes were needed on %s'
