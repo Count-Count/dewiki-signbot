@@ -389,7 +389,7 @@ class BotThread(threading.Thread):
         if not text.endswith('\n'):
             text += '\n'
         revTimestampString = self.getSignatureTimestampString(revTimestamp)
-        text += "%s: [https://de.wikipedia.org/w/index.php?title=%s&direction=prev&oldid=%s Unsignierte Bearbeitung] von {{noping|%s}} um %s.<br>\n" % (page.title(as_link=True), page.title(as_url=True), revision, user.username, revTimestampString)
+        text += "%s: [https://de.wikipedia.org/w/index.php?title=%s&diff=prev&oldid=%s Unsignierte Bearbeitung] von {{noping|%s}} um %s.<br>\n" % (page.title(as_link=True), page.title(as_url=True), revision, user.username, revTimestampString)
         text += "Generierte Bot-Bearbeitung: ''(%s)''\n<pre>%s</pre>\n\n" % (summary, botLine)
         logPage.text = text
         logPage.save(summary='Neuer Log-Eintrag.')
