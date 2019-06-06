@@ -60,11 +60,11 @@ class Controller():
 
             if change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/exclude regex'):
                 pywikibot.output('exclude regex page changed')
-                self.reloadRegex()
+                threading.Thread(target=self.reloadRegex).start()
 
             if change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/Opt-Out'):
                 pywikibot.output('opt-out page changed')
-                self.reloadOptOut()
+                threading.Thread(target=self.reloadOptOut).start()
 
             # Talk page or project page, bot edits excluded
             if (
