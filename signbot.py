@@ -378,9 +378,6 @@ class BotThread(threading.Thread):
 
         return True
 
-    @staticmethod
-    def chance(c):
-        return random.random() < c
 
     def isUserOptOut(self, user):
         # Check for opt-in {{YesAutosign}} -> False
@@ -391,7 +388,7 @@ class BotThread(threading.Thread):
             return True
         # Check for 800 user edits -> False
         # -> True
-#        return user.editCount(force=self.chance(0.25)) > 800
+#        return user.editCount() > 800
 
     def isPageOptOut(self, page):
         self.output("Checking opt-out for %s" % page)
@@ -400,7 +397,6 @@ class BotThread(threading.Thread):
 
     def isFreqpage(self, page):
         # TODO
-        # 0.25 chance of updating list
         return False
 
     def isDiscussion(self, page):
