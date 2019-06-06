@@ -143,6 +143,7 @@ class BotThread(threading.Thread):
 
         if self.isPageOptOut(self.page.title(insite=True)):
             self.output('Page %s on opt-out list' % self.page.title(insite=True))
+            return False, False, False
 
         if self.page.isRedirectPage():
             self.output('Redirect')
