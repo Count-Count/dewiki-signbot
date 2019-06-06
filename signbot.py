@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Original code by zhuyifei1999 (https://wikitech.wikimedia.org/wiki/User:Zhuyifei1999)
-# Heavily modified by Count Count (https://de.wikipedia.org/wiki/User:Count Count)
+# Heavily modified by Count Count (https://de.wikipedia.org/wiki/Benutzer:Count_Count)
 # under the terms of Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
 # https://creativecommons.org/licenses/by-sa/3.0/
 
