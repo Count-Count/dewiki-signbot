@@ -41,9 +41,6 @@ class Controller():
         self.site = pywikibot.Site(user='CountCountBot')
         self.site.login()  # T153541
         self.timezone = pytz.timezone('Europe/Berlin')
-        self.useroptin = None
-        self.useroptout = None
-        self.excluderegex = None
         self.reloadRegex()
         self.reloadOptOut()
         self.useroptin = [] # not implemented
@@ -97,7 +94,8 @@ class Controller():
     def reloadOptOut(self):
         pywikibot.output('Reloading optout list')
         optoutPage = pywikibot.Page(self.site, 'User:CountCountBot/Opt-Out')
-        newoptout = []
+        newuseroptout = set()
+        newpageoptout = set()
         for wikilink in pywikibot.link_regex.finditer(
                 pywikibot.textlib.removeDisabledParts(optoutPage.get(force=True))):
             if not wikilink.group('title').strip():
@@ -110,8 +108,11 @@ class Controller():
                 continue
             if link.namespace == 2:
 #                pywikibot.output('optout found for %s' % link.title.strip())
-                newoptout.append(link.title.strip())
-        self.useroptout = newoptout
+                newuseroptout.add(link.title.strip())
+            else:
+                newpageoptout.add(link.ns_title(onsite=self.site).strip())
+        self.useroptout = newuseroptout
+        self.pageoptout = newpageoptout
 
     def checknotify(self, user):
         return False
@@ -137,6 +138,10 @@ class BotThread(threading.Thread):
         self.page = pywikibot.Page(
             self.site, self.change['title'], ns=self.change['namespace'])
         self.output('Handling')
+
+        if self.isPageOptOut(self.page.title(insite=True)):
+            self.output('Page %s on opt-out list' % self.page.title(insite=True))
+
         if self.page.isRedirectPage():
             self.output('Redirect')
             return False, False, False
@@ -151,7 +156,7 @@ class BotThread(threading.Thread):
             return False, False, False
 
         user = pywikibot.User(self.site, self.change['user'])
-        if self.isOptout(user.username):
+        if self.isUserOptOut(user.username):
             self.output('%s opted-out' % user.username)
             return False, False, False
 
@@ -199,7 +204,7 @@ class BotThread(threading.Thread):
 
                         excluderegextest = self.matchExcludeRegex(line)
                         if excluderegextest is not None:
-                            self.output('%s -- ignored' % excluderegextest)
+                            self.output('Matches %s -- ignored' % excluderegextest)
                             return False, False, False
 
                         if self.isComment(line):
@@ -377,7 +382,7 @@ class BotThread(threading.Thread):
     def chance(c):
         return random.random() < c
 
-    def isOptout(self, user):
+    def isUserOptOut(self, user):
         # Check for opt-in {{YesAutosign}} -> False
         if user in self.controller.useroptin:
             return False
@@ -387,6 +392,11 @@ class BotThread(threading.Thread):
         # Check for 800 user edits -> False
         # -> True
 #        return user.editCount(force=self.chance(0.25)) > 800
+
+    def isPageOptOut(self, page):
+        self.output("Checking opt-out for %s" % page)
+        self.output("Page opt-out list: %s" % str(self.controller.pageoptout))
+        return page in self.controller.pageoptout
 
     def isFreqpage(self, page):
         # TODO
