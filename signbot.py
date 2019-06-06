@@ -199,10 +199,6 @@ class BotThread(threading.Thread):
         if not res:
             return
 
-        if True:
-            self.output("Would have handled after waiting")
-            return
-
         if not self.isFreqpage(self.page):
             self.output('Waiting')
             time.sleep(5 * 60)
