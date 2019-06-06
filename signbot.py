@@ -47,6 +47,7 @@ class Controller():
 #        self.redis = Redis(host='tools-redis')
 
     def run(self):
+        self.reloadRegex()
         signal.signal(signal.SIGALRM, on_timeout)
         signal.alarm(TIMEOUT)
 
@@ -54,6 +55,10 @@ class Controller():
 
         for change in rc:
             signal.alarm(TIMEOUT)
+
+            if change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/exclude regex'):
+                pywikibot.output('exclude regex page changed')
+                self.reloadRegex()
 
             # Talk page or project page, bot edits excluded
             if (
@@ -68,6 +73,20 @@ class Controller():
 
         pywikibot.log('Main thread exit - THIS SHOULD NOT HAPPEN')
         time.sleep(10)
+
+    def reloadRegex(self):
+        pywikibot.output('Reloading exclude regex')
+        # We do not directly assign to self.controller.excluderegex right
+        # now to avoid issues with multi-threading
+        lst = []
+
+        repage = pywikibot.Page(self.site, 'User:CountCountBot/exclude_regex')
+        for line in repage.get(force=True).split('\n'):
+            line = line.strip()
+            if line and not line.startswith('#'):
+                lst.append(re.compile(line, re.I))
+
+        self.excluderegex = lst
 
     def checknotify(self, user):
         return False
@@ -362,20 +381,6 @@ class BotThread(threading.Thread):
         return False
 
     def matchExcludeRegex(self, line):
-        # 0.05 chance of updating list
-        if self.controller.excluderegex is None or self.chance(0.05):
-            # We do not directly assign to self.controller.excluderegex right
-            # now to avoid issues with multi-threading
-            lst = []
-
-            repage = pywikibot.Page(self.site, 'User:CountCountBot/exclude_regex')
-            for line in repage.get(force=True).split('\n'):
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    lst.append(re.compile(line, re.I))
-
-            self.controller.excluderegex = lst
-
         line = line.replace('_', ' ')
         for regex in self.controller.excluderegex:
             reobj = regex.search(line)
