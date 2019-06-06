@@ -44,10 +44,10 @@ class Controller():
         self.useroptin = None
         self.useroptout = None
         self.excluderegex = None
+        self.reloadRegex()
 #        self.redis = Redis(host='tools-redis')
 
     def run(self):
-        self.reloadRegex()
         signal.signal(signal.SIGALRM, on_timeout)
         signal.alarm(TIMEOUT)
 
