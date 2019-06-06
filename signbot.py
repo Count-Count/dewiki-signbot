@@ -151,8 +151,8 @@ class BotThread(threading.Thread):
             return False, False, False
 
         user = pywikibot.User(self.site, self.change['user'])
-        if self.isOptout(user):
-            self.output('%s opted-out' % user)
+        if self.isOptout(user.username):
+            self.output('%s opted-out' % user.username)
             return False, False, False
 
         # diff-reading.
