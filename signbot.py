@@ -392,8 +392,8 @@ class BotThread(threading.Thread):
 #        return user.editCount() > 800
 
     def isPageOptOut(self, page):
-        self.output("Checking opt-out for %s" % page)
-        self.output("Page opt-out list: %s" % str(self.controller.pageoptout))
+#        self.output("Checking opt-out for %s" % page)
+#        self.output("Page opt-out list: %s" % str(self.controller.pageoptout))
         return page in self.controller.pageoptout
 
     def isFreqpage(self, page):
