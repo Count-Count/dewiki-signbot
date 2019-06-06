@@ -108,9 +108,10 @@ class Controller():
             except pywikibot.Error:
                 continue
             if link.namespace == 2:
-#                pywikibot.output('optout found for %s' % link.title.strip())
+#                pywikibot.output('optout found for user %s' % link.title.strip())
                 newuseroptout.add(link.title.strip())
             else:
+#                pywikibot.output('optout found for page %s' % link.ns_title(onsite=self.site).strip())
                 newpageoptout.add(link.ns_title(onsite=self.site).strip())
         self.useroptout = newuseroptout
         self.pageoptout = newpageoptout
