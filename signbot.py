@@ -108,28 +108,27 @@ class BotThread(threading.Thread):
         self.change = change
         self.controller = controller
 
-    def run(self):
+    def changeShouldBeHandled(self):
         self.page = pywikibot.Page(
             self.site, self.change['title'], ns=self.change['namespace'])
         self.output('Handling')
         if self.page.isRedirectPage():
             self.output('Redirect')
-            return
+            return False, False, False
         if self.page.namespace() == 4:
             # Project pages needs attention (__NEWSECTIONLINK__)
             if not self.isDiscussion(self.page):
                 self.output('Not a discussion')
-                return
+                return False, False, False
 
         if {'mw-undo', 'mw-rollback'}.intersection(self.getTags()):
             self.output('undo / rollback')
-            return
-            
+            return False, False, False
 
         user = pywikibot.User(self.site, self.change['user'])
         if self.isOptout(user):
             self.output('%s opted-out' % user)
-            return
+            return False, False, False
 
         # diff-reading.
         if self.change['type'] == 'new':
@@ -143,7 +142,7 @@ class BotThread(threading.Thread):
           or '{{löschen' in new_text.lower() \
           or '{{delete' in new_text.lower():
             self.output('{{sla -- ignored')
-            return
+            return False, False, False
 
         diff = PatchManager(old_text.split('\n') if old_text else [],
                             new_text.split('\n'),
@@ -171,31 +170,45 @@ class BotThread(threading.Thread):
                             if '{{' in line.lower():
                                 self.output('User adding templates to their '
                                             'own talk page -- ignored')
-                                return
+                                return False, False, False
 
                         excluderegextest = self.matchExcludeRegex(line)
                         if excluderegextest is not None:
                             self.output('%s -- ignored' % excluderegextest)
-                            return
+                            return False, False, False
 
                         if self.isComment(line):
                             tosignnum = j
                             tosignstr = line
                             if self.isSigned(user, tosignstr):
                                 self.output('Signed')
-                                return
+                                return False, False, False
 
         if tosignstr is False:
             self.output('No inserts')
-            return
+            return False, False, False
         if self.isSigned(user, tosignstr):
             self.output('Signed')
+            return False, False, False
+        
+        # all checks passed
+        return True, tosignnum, tosignstr
+
+    def run(self):
+        res, tosignnum, tosignstr = self.changeShouldBeHandled()
+        if not res:
+            return
+
+        if True:
+            self.output("Would have handled after waiting")
             return
 
         if not self.isFreqpage(self.page):
             self.output('Waiting')
             time.sleep(5 * 60)
             pass
+
+        user = pywikibot.User(self.site, self.change['user'])
 
         currenttext = self.page.get(force=True).split('\n')
         if currenttext[tosignnum] == tosignstr:
