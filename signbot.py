@@ -45,6 +45,8 @@ class Controller():
         self.useroptout = None
         self.excluderegex = None
         self.reloadRegex()
+        self.reloadOptOut()
+        self.useroptin = [] # not implemented
 #        self.redis = Redis(host='tools-redis')
 
     def run(self):
@@ -59,6 +61,10 @@ class Controller():
             if change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/exclude regex'):
                 pywikibot.output('exclude regex page changed')
                 self.reloadRegex()
+
+            if change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/Opt-Out'):
+                pywikibot.output('opt-out page changed')
+                self.reloadOptOut()
 
             # Talk page or project page, bot edits excluded
             if (
@@ -87,6 +93,25 @@ class Controller():
                 lst.append(re.compile(line, re.I))
 
         self.excluderegex = lst
+
+    def reloadOptOut(self):
+        pywikibot.output('Reloading optout list')
+        optoutPage = pywikibot.Page(self.site, 'User:CountCountBot/Opt-Out')
+        newoptout = []
+        for wikilink in pywikibot.link_regex.finditer(
+                pywikibot.textlib.removeDisabledParts(optoutPage.get(force=True))):
+            if not wikilink.group('title').strip():
+                continue
+            try:
+                link = pywikibot.Link(wikilink.group('title'),
+                                      source=self.site)
+                link.parse()
+            except pywikibot.Error:
+                continue
+            if link.namespace == 2:
+#                pywikibot.output('optout found for %s' % link.title.strip())
+                newoptout.append(link.title.strip())
+        self.useroptout = newoptout
 
     def checknotify(self, user):
         return False
@@ -353,19 +378,6 @@ class BotThread(threading.Thread):
         return random.random() < c
 
     def isOptout(self, user):
-        # 0.25 chance of updating list
-        if (
-            self.controller.useroptin is None or
-            self.controller.useroptout is None or
-            self.chance(0.25)
-        ):
-            self.controller.useroptin = list(
-                pywikibot.Page(self.site, 'Template:YesAutosign')
-                .getReferences(only_template_inclusion=True))
-            self.controller.useroptout = list(
-                pywikibot.Page(self.site, 'Template:NoAutosign')
-                .getReferences(only_template_inclusion=True))
-
         # Check for opt-in {{YesAutosign}} -> False
         if user in self.controller.useroptin:
             return False
