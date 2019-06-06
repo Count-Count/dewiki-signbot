@@ -365,6 +365,7 @@ class BotThread(threading.Thread):
             return False
         # not table/template
         if (
+            tempstr.startswith('!') or
             tempstr.startswith('|') or
             tempstr.startswith('{|') or
             tempstr.endswith('|')
