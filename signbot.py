@@ -247,6 +247,7 @@ class BotThread(threading.Thread):
             self.output('Waiting')
             time.sleep(5 * 60)
             pass
+            self.output('Woke up')
 
         user = pywikibot.User(self.site, self.change['user'])
 
