@@ -185,6 +185,9 @@ class BotThread(threading.Thread):
         tosignstr = False
         tosignnum = False
 
+        deleteCount = 0
+        replaceCount = 0
+
         for block in diff.blocks:
             if block[0] < 0:
                 continue
@@ -216,12 +219,20 @@ class BotThread(threading.Thread):
                             if self.isSigned(user, tosignstr):
                                 self.output('Signed')
                                 return False, False, False
+                if tag == 'delete':
+                    deleteCount += 1
+                if tag == 'replace':
+                    replaceCount += 1
 
         if tosignstr is False:
             self.output('No inserts')
             return False, False, False
         if self.isSigned(user, tosignstr):
             self.output('Signed')
+            return False, False, False
+
+        if deleteCount > 0 or replaceCount > 0:
+            self.output('Deleted or replaced lines found')
             return False, False, False
         
         # all checks passed
