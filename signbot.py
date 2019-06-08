@@ -36,6 +36,17 @@ class TimeoutError(Exception):
 def on_timeout(signum, frame):
     raise TimeoutError
 
+class RevisionInfo():
+    def __init__(self, change):
+        self.namespace = change['namespace']
+        self.title = change['title']
+        self.bot = change['bot']
+        self.type = change['type'] # 'edit' or 'new' or ...
+        self.comment = change['comment']
+        self.user = change['user']
+        self.newRevision = change['revision']['new']
+        self.oldRevision = change['revision']['old'] if change['type'] == 'edit' else None
+        self.timestamp = change['timestamp']
 
 class Controller():
     def __init__(self):
@@ -72,7 +83,7 @@ class Controller():
                 ('!nosign!' not in change['comment']) and
                 (not change['comment'].startswith('Bot: '))
             ):
-                t = BotThread(self.site, change, self)
+                t = BotThread(self.site, RevisionInfo(change), self)
                 t.start()
 
         pywikibot.log('Main thread exit - THIS SHOULD NOT HAPPEN')
@@ -130,15 +141,15 @@ class Controller():
 
 
 class BotThread(threading.Thread):
-    def __init__(self, site, change, controller):
+    def __init__(self, site, revInfo, controller):
         threading.Thread.__init__(self)
         self.site = site
-        self.change = change
+        self.revInfo = revInfo
         self.controller = controller
 
     def changeShouldBeHandled(self):
         self.page = pywikibot.Page(
-            self.site, self.change['title'], ns=self.change['namespace'])
+            self.site, self.revInfo.title, ns=self.revInfo.namespace)
         self.output('Handling')
 
         if self.isPageOptOut(self.page.title(insite=True)):
@@ -162,18 +173,18 @@ class BotThread(threading.Thread):
             self.output('undo / rollback')
             return False, False, False
 
-        user = pywikibot.User(self.site, self.change['user'])
+        user = pywikibot.User(self.site, self.revInfo.user)
         if self.isUserOptOut(user.username):
             self.output('%s opted-out' % user.username)
             return False, False, False
 
         # diff-reading.
-        if self.change['type'] == 'new':
+        if self.revInfo.type == 'new':
             old_text = ''
         else:
-            old_text = self.page.getOldVersion(self.change['revision']['old'])
+            old_text = self.page.getOldVersion(self.revInfo.oldRevision)
 
-        new_text = self.page.getOldVersion(self.change['revision']['new'])
+        new_text = self.page.getOldVersion(self.revInfo.newRevision)
 
         if '{{sla' in new_text.lower() \
           or '{{löschen' in new_text.lower() \
@@ -253,7 +264,7 @@ class BotThread(threading.Thread):
             pass
             self.output('Woke up')
 
-        user = pywikibot.User(self.site, self.change['user'])
+        user = pywikibot.User(self.site, self.revInfo.user)
 
         currenttext = self.page.get(force=True).split('\n')
         if (tosignnum < len(currenttext) and
@@ -269,9 +280,9 @@ class BotThread(threading.Thread):
             return
 
         summary = "Bot: Signaturnachtrag für Beitrag von %s: \"%s\"" % (
-            self.userlink(user), self.change['comment'])
+            self.userlink(user), self.revInfo.comment)
 
-        self.writeLog(self.page, signedLine, summary, self.change['revision']['new'], user, self.change['comment'], self.change['timestamp'])
+        self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision, user, self.revInfo.comment, self.revInfo.timestamp)
 
         if True:
             if not self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
@@ -306,8 +317,8 @@ class BotThread(threading.Thread):
             prop='revisions',
             titles=self.page,
             rvprop='tags',
-            rvstartid=self.change['revision']['new'],
-            rvendid=self.change['revision']['new'],
+            rvstartid=self.revInfo.newRevision,
+            rvendid=self.revInfo.newRevision,
             rvlimit=1
         )
         try:
@@ -327,7 +338,7 @@ class BotThread(threading.Thread):
         p = ''
         if tosignstr[-1] != ' ':
             p = ' '
-        timestamp = self.getSignatureTimestampString(self.change['timestamp'])
+        timestamp = self.getSignatureTimestampString(self.revInfo.timestamp)
         return p + '{{unsigniert|%s|%s}}' % (
             user.username,
             timestamp
