@@ -145,6 +145,10 @@ class BotThread(threading.Thread):
             self.output('Page %s on opt-out list' % self.page.title(insite=True))
             return False, False, False
 
+        if self.page.title(insite=True).find('/Archiv/') > 0:
+            self.output('Suspected archive page')
+            return False, False, False
+
         if self.page.isRedirectPage():
             self.output('Redirect')
             return False, False, False
