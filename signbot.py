@@ -252,7 +252,8 @@ class BotThread(threading.Thread):
         user = pywikibot.User(self.site, self.change['user'])
 
         currenttext = self.page.get(force=True).split('\n')
-        if currenttext[tosignnum] == tosignstr:
+        if (tosignnum < len(currenttext) and
+                currenttext[tosignnum] == tosignstr):
             currenttext[tosignnum] += self.getSignature(tosignstr, user)
             signedLine = currenttext[tosignnum]
         elif currenttext.count(tosignstr) == 1:
