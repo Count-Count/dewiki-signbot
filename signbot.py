@@ -36,17 +36,19 @@ class TimeoutError(Exception):
 def on_timeout(signum, frame):
     raise TimeoutError
 
+
 class RevisionInfo():
     def __init__(self, change):
         self.namespace = change['namespace']
         self.title = change['title']
         self.bot = change['bot']
-        self.type = change['type'] # 'edit' or 'new' or ...
+        self.type = change['type']  # 'edit' or 'new' or ...
         self.comment = change['comment']
         self.user = change['user']
         self.newRevision = change['revision']['new']
         self.oldRevision = change['revision']['old'] if change['type'] == 'edit' else None
         self.timestamp = change['timestamp']
+
 
 class Controller():
     def __init__(self):
@@ -55,7 +57,7 @@ class Controller():
         self.timezone = pytz.timezone('Europe/Berlin')
         self.reloadRegex()
         self.reloadOptOut()
-        self.useroptin = [] # not implemented
+        self.useroptin = []  # not implemented
 #        self.redis = Redis(host='tools-redis')
 
     def run(self):
@@ -119,10 +121,10 @@ class Controller():
             except pywikibot.Error:
                 continue
             if link.namespace == 2:
-#                pywikibot.output('optout found for user %s' % link.title.strip())
+                #                pywikibot.output('optout found for user %s' % link.title.strip())
                 newuseroptout.add(link.title.strip())
             else:
-#                pywikibot.output('optout found for page %s' % link.ns_title(onsite=self.site).strip())
+                #                pywikibot.output('optout found for page %s' % link.ns_title(onsite=self.site).strip())
                 newpageoptout.add(link.ns_title(onsite=self.site).strip())
         self.useroptout = newuseroptout
         self.pageoptout = newpageoptout
@@ -153,7 +155,8 @@ class BotThread(threading.Thread):
         self.output('Handling')
 
         if self.isPageOptOut(self.page.title(insite=True)):
-            self.output('Page %s on opt-out list' % self.page.title(insite=True))
+            self.output('Page %s on opt-out list' %
+                        self.page.title(insite=True))
             return False, False, False
 
         if self.page.title(insite=True).find('/Archiv/') > 0:
@@ -187,8 +190,8 @@ class BotThread(threading.Thread):
         new_text = self.page.getOldVersion(self.revInfo.newRevision)
 
         if '{{sla' in new_text.lower() \
-          or '{{löschen' in new_text.lower() \
-          or '{{delete' in new_text.lower():
+                or '{{löschen' in new_text.lower() \
+                or '{{delete' in new_text.lower():
             self.output('{{sla -- ignored')
             return False, False, False
 
@@ -225,7 +228,8 @@ class BotThread(threading.Thread):
 
                         excluderegextest = self.matchExcludeRegex(line)
                         if excluderegextest is not None:
-                            self.output('Matches %s -- ignored' % excluderegextest)
+                            self.output('Matches %s -- ignored' %
+                                        excluderegextest)
                             return False, False, False
 
                         if self.isComment(line):
@@ -249,7 +253,7 @@ class BotThread(threading.Thread):
         if deleteCount > 0 or replaceCount > 0:
             self.output('Deleted or replaced lines found')
             return False, False, False
-        
+
         # all checks passed
         return True, tosignnum, tosignstr
 
@@ -282,7 +286,8 @@ class BotThread(threading.Thread):
         summary = "Bot: Signaturnachtrag für Beitrag von %s: \"%s\"" % (
             self.userlink(user), self.revInfo.comment)
 
-        self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision, user, self.revInfo.comment, self.revInfo.timestamp)
+        self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
+                      user, self.revInfo.comment, self.revInfo.timestamp)
 
         if True:
             if not self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
@@ -343,7 +348,7 @@ class BotThread(threading.Thread):
             user.username,
             timestamp
         )
-    
+
     def getSignatureTimestampString(self, timestamp):
         return pytz.utc.localize(pywikibot.Timestamp.utcfromtimestamp(timestamp)) \
             .astimezone(self.controller.timezone).strftime('%H:%M, %-d. %B %Y (%Z)')
@@ -410,7 +415,6 @@ class BotThread(threading.Thread):
 
         return True
 
-
     def isUserOptOut(self, user):
         # Check for opt-in {{YesAutosign}} -> False
         if user in self.controller.useroptin:
@@ -423,8 +427,8 @@ class BotThread(threading.Thread):
 #        return user.editCount() > 800
 
     def isPageOptOut(self, page):
-#        self.output("Checking opt-out for %s" % page)
-#        self.output("Page opt-out list: %s" % str(self.controller.pageoptout))
+        #        self.output("Checking opt-out for %s" % page)
+        #        self.output("Page opt-out list: %s" % str(self.controller.pageoptout))
         return page in self.controller.pageoptout
 
     def isFreqpage(self, page):
@@ -461,11 +465,13 @@ class BotThread(threading.Thread):
             text += '\n'
         text += '\n'
         revTimestampString = self.getSignatureTimestampString(revTimestamp)
-        text += "=== %s ===\n[https://de.wikipedia.org/w/index.php?title=%s&diff=prev&oldid=%s Unsignierte Bearbeitung] von {{noping|%s}} um %s.<br>\n" % (page.title(as_link=True), page.title(as_url=True), revision, user.username, revTimestampString)
-        text += "Generierte Bot-Bearbeitung: ''(%s)''\n<pre>%s</pre>\n\n" % (summary, botLine)
+        text += "=== %s ===\n[https://de.wikipedia.org/w/index.php?title=%s&diff=prev&oldid=%s Unsignierte Bearbeitung] von {{noping|%s}} um %s.<br>\n" % (
+            page.title(as_link=True), page.title(as_url=True), revision, user.username, revTimestampString)
+        text += "Generierte Bot-Bearbeitung: ''(%s)''\n<pre>%s</pre>\n\n" % (
+            summary, botLine)
         logPage.text = text
         logPage.save(summary='Neuer Log-Eintrag.')
-        
+
     def userPut(self, page, oldtext, newtext, **kwargs):
         if oldtext == newtext:
             pywikibot.output('No changes were needed on %s'
