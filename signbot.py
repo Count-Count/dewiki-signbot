@@ -252,10 +252,10 @@ class BotThread(threading.Thread):
                                         excluderegextest)
                             return False, None
 
-                        if self.isComment(line):
+                        if self.isNotExcludedLine(line):
                             tosignnum = j
                             tosignstr = line
-                            if self.isSigned(user, tosignstr):
+                            if self.isUserSigned(user, tosignstr):
                                 self.output('Signed')
                                 return False, None
                 if tag == 'delete':
@@ -265,9 +265,6 @@ class BotThread(threading.Thread):
 
         if tosignstr is False:
             self.output('No inserts')
-            return False, None
-        if self.isSigned(user, tosignstr):
-            self.output('Signed')
             return False, None
 
         if deleteCount > 0 or replaceCount > 0:
@@ -380,7 +377,7 @@ class BotThread(threading.Thread):
         else:
             return '[[User:%s|%s]]' % (user.username, user.username)
 
-    def isSigned(self, user, tosignstr):
+    def isUserSigned(self, user, tosignstr):
         for wikilink in pywikibot.link_regex.finditer(
                 pywikibot.textlib.removeDisabledParts(tosignstr)):
             if not wikilink.group('title').strip():
@@ -408,7 +405,7 @@ class BotThread(threading.Thread):
 
         return False
 
-    def isComment(self, line):
+    def isNotExcludedLine(self, line):
         # remove non-functional parts and categories
         tempstr = re.sub(r'\[\[[Kk]ategorie:[^\]]+\]\]', '',
                          pywikibot.textlib.removeDisabledParts(line)).strip()
