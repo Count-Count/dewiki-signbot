@@ -524,6 +524,46 @@ def main():
     Controller().run()
 
 
+#----------------------------------------------------
+from urllib.parse import urlparse, parse_qs
+import unittest
+import datetime
+
+class TestSigning(unittest.TestCase):
+
+    def setUp(self):
+        self.controller = Controller()
+
+    def tearDown(self):
+        pywikibot.stopme()
+
+    def checkShouldBeSigned(self, pageUrl):
+        re.compile('line', re.I)
+        queryVars = parse_qs(urlparse(pageUrl).query)
+        title=queryVars['title'][0]
+        revId=int(queryVars['oldid'][0])
+        page = pywikibot.Page(self.controller.site, title)
+        self.assertTrue(page.exists())
+        self.controller.site.loadrevisions(page,startid=revId, total=1)
+        newRevision = page._revisions[revId]
+        epoch = datetime.datetime.utcfromtimestamp(0)
+        oldRevId = newRevision.parent_id
+        rev = RevisionInfo(page.namespace(), page.title(), "new" if oldRevId is None else "edit", False, newRevision.comment, newRevision.user, oldRevId, revId, (newRevision.timestamp - epoch).total_seconds())
+        bt = BotThread(self.controller.site, rev, self.controller)
+        (res, _, _) = bt.changeShouldBeHandled()
+        return res
+
+    def test_allShouldBeSigned(self):
+        pass
+
+    def test_allShouldNotBeSigned(self):
+        self.assertFalse(self.checkShouldBeSigned('https://de.wikipedia.org/w/index.php?title=Diskussion%3APostgender&diff=prev&oldid=189397879')) # _ in special directive
+        pass
+
+
+#----------------------------------------------------
+
+
 if __name__ == '__main__':
     try:
         main()
