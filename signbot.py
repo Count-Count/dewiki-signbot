@@ -26,6 +26,7 @@ from pywikibot.diff import PatchManager
 #from redisconfig import KEYSIGN
 
 
+
 TIMEOUT = 60  # We expect at least one rc entry every minute
 
 
@@ -156,6 +157,10 @@ class Controller():
 #        p.expireat(key, reset + 10)
 #        return p.execute()[0] >= 3
 
+class ShouldBeHandledResult:
+    def __init__(self, tosignnum, tosignstr):
+        self.tosignnum = tosignnum
+        self.tosignstr = tosignstr
 
 class BotThread(threading.Thread):
     def __init__(self, site, revInfo, controller):
@@ -172,29 +177,29 @@ class BotThread(threading.Thread):
         if self.isPageOptOut(self.page.title(insite=True)):
             self.output('Page %s on opt-out list' %
                         self.page.title(insite=True))
-            return False, False, False
+            return False, None
 
-        if self.page.title(insite=True).find('/Archiv/') > 0:
+        if self.page.title(insite=True).find('/Archiv/') > 0 or self.page.title(insite=True).find('/Archiv ') > 0:
             self.output('Suspected archive page')
-            return False, False, False
+            return False, None
 
         if self.page.isRedirectPage():
             self.output('Redirect')
-            return False, False, False
+            return False, None
         if self.page.namespace() == 4:
             # Project pages needs attention (__NEWSECTIONLINK__)
             if not self.isDiscussion(self.page):
                 self.output('Not a discussion')
-                return False, False, False
+                return False, None
 
         if {'mw-undo', 'mw-rollback'}.intersection(self.getTags()):
             self.output('undo / rollback')
-            return False, False, False
+            return False, None
 
         user = pywikibot.User(self.site, self.revInfo.user)
         if self.isUserOptOut(user.username):
             self.output('%s opted-out' % user.username)
-            return False, False, False
+            return False, None
 
         # diff-reading.
         if self.revInfo.type == 'new':
@@ -208,7 +213,7 @@ class BotThread(threading.Thread):
                 or '{{löschen' in new_text.lower() \
                 or '{{delete' in new_text.lower():
             self.output('{{sla -- ignored')
-            return False, False, False
+            return False, None
 
         diff = PatchManager(old_text.split('\n') if old_text else [],
                             new_text.split('\n'),
@@ -239,20 +244,20 @@ class BotThread(threading.Thread):
                             if '{{' in line.lower():
                                 self.output('User adding templates to their '
                                             'own talk page -- ignored')
-                                return False, False, False
+                                return False, None
 
                         excluderegextest = self.matchExcludeRegex(line)
                         if excluderegextest is not None:
                             self.output('Matches %s -- ignored' %
                                         excluderegextest)
-                            return False, False, False
+                            return False, None
 
                         if self.isComment(line):
                             tosignnum = j
                             tosignstr = line
                             if self.isSigned(user, tosignstr):
                                 self.output('Signed')
-                                return False, False, False
+                                return False, None
                 if tag == 'delete':
                     deleteCount += 1
                 if tag == 'replace':
@@ -260,20 +265,20 @@ class BotThread(threading.Thread):
 
         if tosignstr is False:
             self.output('No inserts')
-            return False, False, False
+            return False, None
         if self.isSigned(user, tosignstr):
             self.output('Signed')
-            return False, False, False
+            return False, None
 
         if deleteCount > 0 or replaceCount > 0:
             self.output('Deleted or replaced lines found')
-            return False, False, False
+            return False, None
 
         # all checks passed
-        return True, tosignnum, tosignstr
+        return True, ShouldBeHandledResult(tosignnum, tosignstr)
 
     def run(self):
-        res, tosignnum, tosignstr = self.changeShouldBeHandled()
+        res, shouldBeHandledResult = self.changeShouldBeHandled()
         if not res:
             return
 
@@ -286,14 +291,14 @@ class BotThread(threading.Thread):
         user = pywikibot.User(self.site, self.revInfo.user)
 
         currenttext = self.page.get(force=True).split('\n')
-        if (tosignnum < len(currenttext) and
-                currenttext[tosignnum] == tosignstr):
-            currenttext[tosignnum] += self.getSignature(tosignstr, user)
-            signedLine = currenttext[tosignnum]
-        elif currenttext.count(tosignstr) == 1:
-            currenttext[currenttext.index(tosignstr)] += \
-                self.getSignature(tosignstr, user)
-            signedLine = [currenttext.index(tosignstr)]
+        if (shouldBeHandledResult.tosignnum < len(currenttext) and
+                currenttext[shouldBeHandledResult.tosignnum] == shouldBeHandledResult.tosignstr):
+            currenttext[shouldBeHandledResult.tosignnum] += self.getSignature(shouldBeHandledResult.tosignstr, user)
+            signedLine = currenttext[shouldBeHandledResult.tosignnum]
+        elif currenttext.count(shouldBeHandledResult.tosignstr) == 1:
+            currenttext[currenttext.index(shouldBeHandledResult.tosignstr)] += \
+                self.getSignature(shouldBeHandledResult.tosignstr, user)
+            signedLine = [currenttext.index(shouldBeHandledResult.tosignstr)]
         else:
             self.output('Line no longer found, probably signed')
             return
@@ -537,7 +542,7 @@ class TestSigning(unittest.TestCase):
     def tearDown(self):
         pywikibot.stopme()
 
-    def checkShouldBeSigned(self, pageUrl):
+    def getRevisionInfo(self, pageUrl : str) -> RevisionInfo:
         re.compile('line', re.I)
         queryVars = parse_qs(urlparse(pageUrl).query)
         title=queryVars['title'][0]
@@ -548,17 +553,27 @@ class TestSigning(unittest.TestCase):
         newRevision = page._revisions[revId]
         epoch = datetime.datetime.utcfromtimestamp(0)
         oldRevId = newRevision.parent_id
-        rev = RevisionInfo(page.namespace(), page.title(), "new" if oldRevId is None else "edit", False, newRevision.comment, newRevision.user, oldRevId, revId, (newRevision.timestamp - epoch).total_seconds())
+        return RevisionInfo(page.namespace(), page.title(), "new" if oldRevId is None else "edit", False, newRevision.comment, newRevision.user, oldRevId, revId, (newRevision.timestamp - epoch).total_seconds())
+
+    def checkShouldBeFullySigned(self, pageUrl):
+        rev = self.getRevisionInfo(pageUrl)
         bt = BotThread(self.controller.site, rev, self.controller)
-        (res, _, _) = bt.changeShouldBeHandled()
-        return res
+        (res, _) = bt.changeShouldBeHandled()
+        self.assertTrue(res)
+    
+    def checkShouldNotBeSigned(self, pageUrl):
+        rev = self.getRevisionInfo(pageUrl)
+        bt = BotThread(self.controller.site, rev, self.controller)
+        (res, _) = bt.changeShouldBeHandled()
+        self.assertFalse(res)
 
     def test_allShouldBeSigned(self):
+        self.checkShouldBeFullySigned('https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion%3AAgathenon&diff=prev&oldid=189352195') # _ in special directive
         pass
 
     def test_allShouldNotBeSigned(self):
-        self.assertFalse(self.checkShouldBeSigned('https://de.wikipedia.org/w/index.php?title=Diskussion%3APostgender&diff=prev&oldid=189397879')) # _ in special directive
-        pass
+        self.checkShouldNotBeSigned('https://de.wikipedia.org/w/index.php?title=Diskussion%3APostgender&diff=prev&oldid=189397879') # _ in special directive
+        self.checkShouldNotBeSigned('https://de.wikipedia.org/w/index.php?title=Wikipedia%3AVandalismusmeldung&diff=prev&oldid=189343072') # moved text
 
 
 #----------------------------------------------------
@@ -566,6 +581,8 @@ class TestSigning(unittest.TestCase):
 
 if __name__ == '__main__':
     try:
-        main()
+#        main()
+        unittest.main()
     finally:
         pywikibot.stopme()
+
