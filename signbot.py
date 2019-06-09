@@ -425,7 +425,7 @@ class BotThread(threading.Thread):
         if tempstr.startswith('----'):
             return False
         # not magic words
-        if re.match(r'^__[A-Z]+__$', tempstr):
+        if re.match(u'^__[A-ZÄÖÜ_]+__$', tempstr):
             return False
 
         return True
