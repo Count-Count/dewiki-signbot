@@ -61,13 +61,15 @@ class Controller():
 #        self.redis = Redis(host='tools-redis')
 
     def run(self):
-        signal.signal(signal.SIGALRM, on_timeout)
-        signal.alarm(TIMEOUT)
+        if os.name != 'nt':
+            signal.signal(signal.SIGALRM, on_timeout)
+            signal.alarm(TIMEOUT)
 
         rc = site_rc_listener(self.site)
 
         for change in rc:
-            signal.alarm(TIMEOUT)
+            if os.name != 'nt':
+                signal.alarm(TIMEOUT)
 
             if change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/exclude regex'):
                 pywikibot.output('exclude regex page changed')
