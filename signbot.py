@@ -38,16 +38,29 @@ def on_timeout(signum, frame):
 
 
 class RevisionInfo():
-    def __init__(self, change):
-        self.namespace = change['namespace']
-        self.title = change['title']
-        self.bot = change['bot']
-        self.type = change['type']  # 'edit' or 'new' or ...
-        self.comment = change['comment']
-        self.user = change['user']
-        self.newRevision = change['revision']['new']
-        self.oldRevision = change['revision']['old'] if change['type'] == 'edit' else None
-        self.timestamp = change['timestamp']
+    @classmethod
+    def fromRecentChange(cls, change) -> 'RevisionInfo':
+        return cls(change['namespace'], 
+            change['title'], 
+            change['type'],
+            change['bot'],
+            change['comment'],
+            change['user'],
+            change['revision']['old'] if change['type'] == 'edit' else None,
+            change['revision']['new'],
+            change['timestamp']
+            )
+
+    def __init__(self, namespace, title, edittype, bot, comment, user, oldRevision, newRevision, timestamp):
+        self.namespace =  namespace
+        self.title = title
+        self.bot = bot
+        self.type = edittype  # 'edit' or 'new' or ...
+        self.comment = comment
+        self.user = user
+        self.newRevision = newRevision
+        self.oldRevision = oldRevision
+        self.timestamp = timestamp
 
 
 class Controller():
@@ -87,7 +100,7 @@ class Controller():
                 ('!nosign!' not in change['comment']) and
                 (not change['comment'].startswith('Bot: '))
             ):
-                t = BotThread(self.site, RevisionInfo(change), self)
+                t = BotThread(self.site, RevisionInfo.fromRecentChange(change), self)
                 t.start()
 
         pywikibot.log('Main thread exit - THIS SHOULD NOT HAPPEN')
