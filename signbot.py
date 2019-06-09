@@ -368,7 +368,7 @@ class BotThread(threading.Thread):
 
     def getSignatureTimestampString(self, timestamp):
         return pytz.utc.localize(pywikibot.Timestamp.utcfromtimestamp(timestamp)) \
-            .astimezone(self.controller.timezone).strftime('%H:%M, %-d. %B %Y (%Z)')
+            .astimezone(self.controller.timezone).strftime('%H:%M, %-d. %b. %Y (%Z)')
 
     def userlink(self, user):
         if user.isAnonymous():
