@@ -281,7 +281,6 @@ class BotThread(threading.Thread):
         if not self.isFreqpage(self.page):
             self.output('Waiting')
             time.sleep(5 * 60)
-            pass
             self.output('Woke up')
 
         user = pywikibot.User(self.site, self.revInfo.user)
