@@ -18,6 +18,7 @@ import random
 import signal
 import threading
 import hashlib
+import base64
 import locale
 import pytz
 
@@ -25,8 +26,7 @@ import pywikibot
 from pywikibot.comms.eventstreams import site_rc_listener
 from pywikibot.diff import PatchManager
 
-# from redis import Redis
-# from redisconfig import KEYSIGN
+from redis import Redis
 
 
 TIMEOUT = 60  # We expect at least one rc entry every minute
@@ -74,7 +74,11 @@ class Controller():
         self.reloadRegex()
         self.reloadOptOut()
         self.useroptin = []  # not implemented
-#        self.redis = Redis(host='tools-redis')
+        self.botkey = os.environ.get('REDIS_KEY')
+        if not self.botkey or '' == self.botkey.strip():
+            raise Exception('REDIS_KEY environment variable not set')
+        self.redis = Redis(host='tools-redis' if os.name !=
+                           'nt' else 'localhost')
 
     def run(self):
         if os.name != 'nt':
@@ -148,17 +152,38 @@ class Controller():
         self.useroptout = newuseroptout
         self.pageoptout = newpageoptout
 
+    def hash(self, str):
+        return base64.b64encode(hashlib.sha3_224(str.encode('utf-8')).digest()).decode('ascii')
+
+    def getKey(self, user):
+        return self.hash(self.botkey)+':'+self.hash(self.botkey+':'+user.username)
+
+    def getSetKey(self):
+        return self.hash(self.botkey)+':'+self.hash(self.botkey+':'+self.botkey+':set')
+
     def checknotify(self, user):
-        return False
-#        if user.isAnonymous():
-#            return False
-#        reset = int(time.time()) + 86400
-#        key = KEYSIGN + ':'
-#        key += hashlib.md5(user.username.encode('utf-8')).hexdigest()
-#        p = self.redis.pipeline()
-#        p.incr(key)
-#        p.expireat(key, reset + 10)
-#        return p.execute()[0] >= 3
+        if user.isAnonymous():
+            return False
+        reset = int(time.time()) + 60*60*24*30
+        key = self.getKey(user)
+        p = self.redis.pipeline()
+        p.incr(key)
+        p.expireat(key, reset + 10)
+        p.sadd(self.getSetKey(), key)
+        limitReached = p.execute()[0] >= 3
+        if limitReached:
+            p.delete(key)
+            p.execute()
+            return True
+
+    def clearnotify(self, user):
+        if user.isAnonymous():
+            return
+        key = self.getKey(user)
+        p = self.redis.pipeline()
+        p.srem(self.getSetKey(), key)
+        p.delete(key)
+        p.execute()
 
 
 class ShouldBeHandledResult:
@@ -271,6 +296,7 @@ class BotThread(threading.Thread):
                             timestamp1) >= 0 or tosignstr.find(timestamp2) >= 0
                         userSigned = self.isUserSigned(user, tosignstr)
                         if timeSigned and userSigned:
+                            self.controller.clearnotify(user)
                             self.output('Signed')
                             return False, None
 
@@ -315,18 +341,12 @@ class BotThread(threading.Thread):
         summary = "Bot: Signaturnachtrag für Beitrag von %s: \"%s\"" % (
             self.userlink(user), self.revInfo.comment)
 
-        self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
-                      user, self.revInfo.comment, self.revInfo.timestamp)
+        if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
+            self.userPut(self.page, self.page.get(),
+                         '\n'.join(currenttext), comment=summary)
 
-        if not self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
-            self.output('Would have handled - ignoring.')
-            return
-
-        self.userPut(self.page, self.page.get(),
-                     '\n'.join(currenttext), comment=summary)
-
-        # self.notify(user) {{subst:Please sign}} -- ignore {{bots}}
-        if self.controller.checknotify(user):
+        notify = self.controller.checknotify(user)
+        if notify:
             self.output('Notifying %s' % user)
             talk = user.getUserTalkPage()
             if talk.isRedirectPage():
@@ -337,9 +357,15 @@ class BotThread(threading.Thread):
                 talktext = ''
 
             talktext += '{{subst:Unterschreiben}}'
-            self.userPut(talk, talk.text, talktext,
-                         comment='Bot: Hinweisvorlage {{subst:Unterschreiben}} ergänzt',
-                         minor=False)
+            if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
+                self.userPut(talk, talk.text, talktext,
+                             comment='Bot: Hinweisvorlage {{subst:Unterschreiben}} ergänzt',
+                             minor=False)
+
+        self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
+                        user, self.revInfo.comment, self.revInfo.timestamp, notify)
+
+
 
     def output(self, info):
         pywikibot.output('%s: %s' % (self.page, info))
@@ -501,7 +527,7 @@ class BotThread(threading.Thread):
                 return reobj.group(0)
         return None
 
-    def writeLog(self, page, botLine, summary, revision, user, revSummary, revTimestamp):
+    def writeLog(self, page, botLine, summary, revision, user, revSummary, revTimestamp, notified):
         logPage = pywikibot.Page(self.site, 'Benutzer:CountCountBot/Log')
         oldText = logPage.text
         text = oldText
@@ -509,9 +535,10 @@ class BotThread(threading.Thread):
         if not text.endswith('\n'):
             text += '\n'
         text += '\n'
+        notifyString = ' (benachrichtigt)' if notified else ''
         revTimestampString = self.getSignatureTimestampString(revTimestamp)
-        text += "=== %s ===\n[https://de.wikipedia.org/w/index.php?title=%s&diff=prev&oldid=%s Unsignierte Bearbeitung] von {{noping|%s}} um %s.<br>\n" % (
-            page.title(as_link=True), page.title(as_url=True), revision, user.username, revTimestampString)
+        text += "=== %s ===\n[https://de.wikipedia.org/w/index.php?title=%s&diff=prev&oldid=%s Unsignierte Bearbeitung] von {{noping|%s}}%s um %s.<br>\n" % (
+            page.title(as_link=True), page.title(as_url=True), revision, user.username, notifyString, revTimestampString)
         text += "Generierte Bot-Bearbeitung: ''(%s)''\n<pre>%s</pre>\n\n" % (
             summary, botLine)
         logPage.text = text
