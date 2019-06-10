@@ -25,8 +25,8 @@ import pywikibot
 from pywikibot.comms.eventstreams import site_rc_listener
 from pywikibot.diff import PatchManager
 
-#from redis import Redis
-#from redisconfig import KEYSIGN
+# from redis import Redis
+# from redisconfig import KEYSIGN
 
 
 TIMEOUT = 60  # We expect at least one rc entry every minute
