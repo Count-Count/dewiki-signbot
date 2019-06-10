@@ -223,9 +223,6 @@ class BotThread(threading.Thread):
         tosignstr = False
         tosignnum = False
 
-        deleteCount = 0
-        replaceCount = 0
-
         if (len(diff.hunks) > 1):
             self.output('Multiple diff hunks %d' % len(diff.blocks))
             return False, None
@@ -260,16 +257,12 @@ class BotThread(threading.Thread):
                             self.output('Signed')
                             return False, None
             if tag == 'delete':
-                deleteCount += 1
+                return False, None
             if tag == 'replace':
-                replaceCount += 1
+                return False, None
 
         if tosignstr is False:
             self.output('No inserts')
-            return False, None
-
-        if deleteCount > 0 or replaceCount > 0:
-            self.output('Deleted or replaced lines found')
             return False, None
 
         # all checks passed
