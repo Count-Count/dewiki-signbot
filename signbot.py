@@ -545,6 +545,9 @@ class TestSigning(unittest.TestCase):
         title=queryVars['title'][0]
         revId=int(queryVars['oldid'][0])
         page = pywikibot.Page(self.controller.site, title)
+        if not page.exists():
+            pywikibot.output(pageUrl)
+            raise Exception("%s - not found" % pageUrl)
         self.assertTrue(page.exists())
         self.controller.site.loadrevisions(page,startid=revId, total=1)
         newRevision = page._revisions[revId]
