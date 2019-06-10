@@ -574,6 +574,21 @@ class TestSigning(unittest.TestCase):
     def test_allShouldNotBeSigned(self):
         self.checkShouldNotBeSigned('https://de.wikipedia.org/w/index.php?title=Diskussion%3APostgender&diff=prev&oldid=189397879') # _ in special directive
         self.checkShouldNotBeSigned('https://de.wikipedia.org/w/index.php?title=Wikipedia%3AVandalismusmeldung&diff=prev&oldid=189343072') # moved text
+    
+    def test_allShouldBeSignedFromPage(self):
+        text = pywikibot.Page(self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die komplett nachsigniert werden dürfen').get(force=True)
+        matches = re.compile(r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
+        for match in matches:
+            print('Checking %s' % match)
+            self.checkShouldBeFullySigned(match)
+
+    def test_allShouldNotBeSignedFromPage(self):
+        text = pywikibot.Page(self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die nicht nachsigniert werden dürfen').get(force=True)
+        matches = re.compile(r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
+        for match in matches:
+            self.checkShouldNotBeSigned(match)
+
+
 
 
 #----------------------------------------------------
