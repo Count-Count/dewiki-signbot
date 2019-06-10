@@ -8,6 +8,9 @@
 
 from __future__ import unicode_literals
 
+import datetime
+import unittest
+from urllib.parse import urlparse, parse_qs
 import os
 import re
 import time
@@ -26,7 +29,6 @@ from pywikibot.diff import PatchManager
 #from redisconfig import KEYSIGN
 
 
-
 TIMEOUT = 60  # We expect at least one rc entry every minute
 
 
@@ -41,19 +43,19 @@ def on_timeout(signum, frame):
 class RevisionInfo():
     @classmethod
     def fromRecentChange(cls, change) -> 'RevisionInfo':
-        return cls(change['namespace'], 
-            change['title'], 
-            change['type'],
-            change['bot'],
-            change['comment'],
-            change['user'],
-            change['revision']['old'] if change['type'] == 'edit' else None,
-            change['revision']['new'],
-            change['timestamp']
-            )
+        return cls(change['namespace'],
+                   change['title'],
+                   change['type'],
+                   change['bot'],
+                   change['comment'],
+                   change['user'],
+                   change['revision']['old'] if change['type'] == 'edit' else None,
+                   change['revision']['new'],
+                   change['timestamp']
+                   )
 
     def __init__(self, namespace, title, edittype, bot, comment, user, oldRevision, newRevision, timestamp):
-        self.namespace =  namespace
+        self.namespace = namespace
         self.title = title
         self.bot = bot
         self.type = edittype  # 'edit' or 'new' or ...
@@ -101,7 +103,8 @@ class Controller():
                 ('!nosign!' not in change['comment']) and
                 (not change['comment'].startswith('Bot: '))
             ):
-                t = BotThread(self.site, RevisionInfo.fromRecentChange(change), self)
+                t = BotThread(
+                    self.site, RevisionInfo.fromRecentChange(change), self)
                 t.start()
 
         pywikibot.log('Main thread exit - THIS SHOULD NOT HAPPEN')
@@ -157,10 +160,12 @@ class Controller():
 #        p.expireat(key, reset + 10)
 #        return p.execute()[0] >= 3
 
+
 class ShouldBeHandledResult:
     def __init__(self, tosignnum, tosignstr):
         self.tosignnum = tosignnum
         self.tosignstr = tosignstr
+
 
 class BotThread(threading.Thread):
     def __init__(self, site, revInfo, controller):
@@ -284,7 +289,8 @@ class BotThread(threading.Thread):
         currenttext = self.page.get(force=True).split('\n')
         if (shouldBeHandledResult.tosignnum < len(currenttext) and
                 currenttext[shouldBeHandledResult.tosignnum] == shouldBeHandledResult.tosignstr):
-            currenttext[shouldBeHandledResult.tosignnum] += self.getSignature(shouldBeHandledResult.tosignstr, user)
+            currenttext[shouldBeHandledResult.tosignnum] += self.getSignature(
+                shouldBeHandledResult.tosignstr, user)
             signedLine = currenttext[shouldBeHandledResult.tosignnum]
         elif currenttext.count(shouldBeHandledResult.tosignstr) == 1:
             currenttext[currenttext.index(shouldBeHandledResult.tosignstr)] += \
@@ -520,10 +526,8 @@ def main():
     Controller().run()
 
 
-#----------------------------------------------------
-from urllib.parse import urlparse, parse_qs
-import unittest
-import datetime
+# ----------------------------------------------------
+
 
 class TestSigning(unittest.TestCase):
 
@@ -533,28 +537,28 @@ class TestSigning(unittest.TestCase):
     def tearDown(self):
         pywikibot.stopme()
 
-    def getRevisionInfo(self, pageUrl : str) -> RevisionInfo:
+    def getRevisionInfo(self, pageUrl: str) -> RevisionInfo:
         re.compile('line', re.I)
         queryVars = parse_qs(urlparse(pageUrl).query)
-        title=queryVars['title'][0]
-        revId=int(queryVars['oldid'][0])
+        title = queryVars['title'][0]
+        revId = int(queryVars['oldid'][0])
         page = pywikibot.Page(self.controller.site, title)
         if not page.exists():
             pywikibot.output(pageUrl)
             raise Exception("%s - not found" % pageUrl)
         self.assertTrue(page.exists())
-        self.controller.site.loadrevisions(page,startid=revId, total=1)
+        self.controller.site.loadrevisions(page, startid=revId, total=1)
         newRevision = page._revisions[revId]
         epoch = datetime.datetime.utcfromtimestamp(0)
         oldRevId = newRevision.parent_id
-        return RevisionInfo(page.namespace(), page.title(), "new" if oldRevId==0 else "edit", False, newRevision.comment, newRevision.user, oldRevId, revId, (newRevision.timestamp - epoch).total_seconds())
+        return RevisionInfo(page.namespace(), page.title(), "new" if oldRevId == 0 else "edit", False, newRevision.comment, newRevision.user, oldRevId, revId, (newRevision.timestamp - epoch).total_seconds())
 
     def checkShouldBeFullySigned(self, pageUrl):
         rev = self.getRevisionInfo(pageUrl)
         bt = BotThread(self.controller.site, rev, self.controller)
         (res, _) = bt.changeShouldBeHandled()
         self.assertTrue(res)
-    
+
     def checkShouldNotBeSigned(self, pageUrl):
         rev = self.getRevisionInfo(pageUrl)
         bt = BotThread(self.controller.site, rev, self.controller)
@@ -562,36 +566,38 @@ class TestSigning(unittest.TestCase):
         self.assertFalse(res)
 
     def test_allShouldBeSigned(self):
-        self.checkShouldBeFullySigned('https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion%3AAgathenon&diff=prev&oldid=189352195') # _ in special directive
+        self.checkShouldBeFullySigned(
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion%3AAgathenon&diff=prev&oldid=189352195')  # _ in special directive
         pass
 
     def test_allShouldNotBeSigned(self):
-        self.checkShouldNotBeSigned('https://de.wikipedia.org/w/index.php?title=Diskussion%3APostgender&diff=prev&oldid=189397879') # _ in special directive
-        self.checkShouldNotBeSigned('https://de.wikipedia.org/w/index.php?title=Wikipedia%3AVandalismusmeldung&diff=prev&oldid=189343072') # moved text
-    
+        self.checkShouldNotBeSigned(
+            'https://de.wikipedia.org/w/index.php?title=Diskussion%3APostgender&diff=prev&oldid=189397879')  # _ in special directive
+        self.checkShouldNotBeSigned(
+            'https://de.wikipedia.org/w/index.php?title=Wikipedia%3AVandalismusmeldung&diff=prev&oldid=189343072')  # moved text
+
     def test_allShouldBeSignedFromPage(self):
-        text = pywikibot.Page(self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die komplett nachsigniert werden dürfen').get(force=True)
-        matches = re.compile(r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
+        text = pywikibot.Page(
+            self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die komplett nachsigniert werden dürfen').get(force=True)
+        matches = re.compile(
+            r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
         for match in matches:
             print('Checking %s' % match)
             self.checkShouldBeFullySigned(match)
 
     def test_allShouldNotBeSignedFromPage(self):
-        text = pywikibot.Page(self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die nicht nachsigniert werden dürfen').get(force=True)
-        matches = re.compile(r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
+        text = pywikibot.Page(
+            self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die nicht nachsigniert werden dürfen').get(force=True)
+        matches = re.compile(
+            r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
         for match in matches:
             self.checkShouldNotBeSigned(match)
 
 
-
-
-#----------------------------------------------------
-
-
+# ----------------------------------------------------
 if __name__ == '__main__':
     try:
-#        main()
-        unittest.main()
+        main()
+#        unittest.main()
     finally:
         pywikibot.stopme()
-
