@@ -305,10 +305,9 @@ class BotThread(threading.Thread):
         self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
                       user, self.revInfo.comment, self.revInfo.timestamp)
 
-        if True:
-            if not self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
-                self.output('Would have handled - ignoring.')
-                return
+        if not self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
+            self.output('Would have handled - ignoring.')
+            return
 
         self.userPut(self.page, self.page.get(),
                      '\n'.join(currenttext), comment=summary)
