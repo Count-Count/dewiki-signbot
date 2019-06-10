@@ -317,10 +317,9 @@ class BotThread(threading.Thread):
         if not res:
             return
 
-        if not self.isFreqpage(self.page):
-            self.output('Waiting')
-            time.sleep(5 * 60)
-            self.output('Woke up')
+        self.output('Waiting')
+        time.sleep(5 * 60)
+        self.output('Woke up')
 
         user = pywikibot.User(self.site, self.revInfo.user)
 
@@ -499,10 +498,6 @@ class BotThread(threading.Thread):
         #        self.output("Checking opt-out for %s" % page)
         #        self.output("Page opt-out list: %s" % str(self.controller.pageoptout))
         return page in self.controller.pageoptout
-
-    def isFreqpage(self, page):
-        # TODO
-        return False
 
     def isDiscussion(self, page):
         # TODO: sandbox
