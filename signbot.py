@@ -226,42 +226,43 @@ class BotThread(threading.Thread):
         deleteCount = 0
         replaceCount = 0
 
-        for block in diff.blocks:
-            if block[0] < 0:
-                continue
-            hunk = diff.hunks[block[0]]
-            group = hunk.group
+        if (len(diff.hunks) > 1):
+            self.output('Multiple diff hunks %d' % len(diff.blocks))
+            return False, None
 
-            for tag, i1, i2, j1, j2 in group:
-                if tag == 'insert':
-                    for j in range(j1, j2):
-                        line = hunk.b[j]
-                        if (
-                            self.page == user.getUserTalkPage() or
-                            self.page.title().startswith(
-                                user.getUserTalkPage().title() + '/')
-                        ):
-                            if '{{' in line.lower():
-                                self.output('User adding templates to their '
-                                            'own talk page -- ignored')
-                                return False, None
+        hunk = diff.hunks[0]
+        group = hunk.group
 
-                        excluderegextest = self.matchExcludeRegex(line)
-                        if excluderegextest is not None:
-                            self.output('Matches %s -- ignored' %
-                                        excluderegextest)
+        for tag, i1, i2, j1, j2 in group:
+            if tag == 'insert':
+                for j in range(j1, j2):
+                    line = hunk.b[j]
+                    if (
+                        self.page == user.getUserTalkPage() or
+                        self.page.title().startswith(
+                            user.getUserTalkPage().title() + '/')
+                    ):
+                        if '{{' in line.lower():
+                            self.output('User adding templates to their '
+                                        'own talk page -- ignored')
                             return False, None
 
-                        if self.isNotExcludedLine(line):
-                            tosignnum = j
-                            tosignstr = line
-                            if self.isUserSigned(user, tosignstr):
-                                self.output('Signed')
-                                return False, None
-                if tag == 'delete':
-                    deleteCount += 1
-                if tag == 'replace':
-                    replaceCount += 1
+                    excluderegextest = self.matchExcludeRegex(line)
+                    if excluderegextest is not None:
+                        self.output('Matches %s -- ignored' %
+                                    excluderegextest)
+                        return False, None
+
+                    if self.isNotExcludedLine(line):
+                        tosignnum = j
+                        tosignstr = line
+                        if self.isUserSigned(user, tosignstr):
+                            self.output('Signed')
+                            return False, None
+            if tag == 'delete':
+                deleteCount += 1
+            if tag == 'replace':
+                replaceCount += 1
 
         if tosignstr is False:
             self.output('No inserts')
