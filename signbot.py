@@ -162,9 +162,11 @@ class Controller():
 
 
 class ShouldBeHandledResult:
-    def __init__(self, tosignnum, tosignstr):
+    def __init__(self, tosignnum, tosignstr, isAlreadyTimeSigned, isAlreadyUserSigned):
         self.tosignnum = tosignnum
         self.tosignstr = tosignstr
+        self.isAlreadyTimeSigned = isAlreadyTimeSigned
+        self.isAlreadyUserSigned = isAlreadyUserSigned
 
 
 class BotThread(threading.Thread):
@@ -235,6 +237,13 @@ class BotThread(threading.Thread):
         hunk = diff.hunks[0]
         group = hunk.group
 
+        timestamp1 = self.getSignatureTimestampString(self.revInfo.timestamp)
+        timestamp2 = self.getSignatureTimestampString(
+            self.revInfo.timestamp - 60)
+
+        timeSigned = False
+        userSigned = False
+
         for tag, i1, i2, j1, j2 in group:
             if tag == 'insert':
                 for j in range(j1, j2):
@@ -258,9 +267,13 @@ class BotThread(threading.Thread):
                     if self.isNotExcludedLine(line):
                         tosignnum = j
                         tosignstr = line
-                        if self.isUserSigned(user, tosignstr):
+                        timeSigned = tosignstr.find(
+                            timestamp1) >= 0 or tosignstr.find(timestamp2) >= 0
+                        userSigned = self.isUserSigned(user, tosignstr)
+                        if timeSigned and userSigned:
                             self.output('Signed')
                             return False, None
+
             if tag == 'delete':
                 return False, None
             if tag == 'replace':
@@ -271,7 +284,7 @@ class BotThread(threading.Thread):
             return False, None
 
         # all checks passed
-        return True, ShouldBeHandledResult(tosignnum, tosignstr)
+        return True, ShouldBeHandledResult(tosignnum, tosignstr, timeSigned, userSigned)
 
     def run(self):
         res, shouldBeHandledResult = self.changeShouldBeHandled()
@@ -289,11 +302,11 @@ class BotThread(threading.Thread):
         if (shouldBeHandledResult.tosignnum < len(currenttext) and
                 currenttext[shouldBeHandledResult.tosignnum] == shouldBeHandledResult.tosignstr):
             currenttext[shouldBeHandledResult.tosignnum] += self.getSignature(
-                shouldBeHandledResult.tosignstr, user)
+                shouldBeHandledResult.tosignstr, user, shouldBeHandledResult.isAlreadyTimeSigned, shouldBeHandledResult.isAlreadyUserSigned)
             signedLine = currenttext[shouldBeHandledResult.tosignnum]
         elif currenttext.count(shouldBeHandledResult.tosignstr) == 1:
-            currenttext[currenttext.index(shouldBeHandledResult.tosignstr)] += \
-                self.getSignature(shouldBeHandledResult.tosignstr, user)
+            currenttext[currenttext.index(shouldBeHandledResult.tosignstr)] += self.getSignature(shouldBeHandledResult.tosignstr, user,
+                                                                                                 shouldBeHandledResult.isAlreadyTimeSigned, shouldBeHandledResult.isAlreadyUserSigned)
             signedLine = [currenttext.index(shouldBeHandledResult.tosignstr)]
         else:
             self.output('Line no longer found, probably signed')
@@ -354,14 +367,26 @@ class BotThread(threading.Thread):
             except KeyError:
                 return []
 
-    def getSignature(self, tosignstr, user):
+    def getSignature(self, tosignstr, user, isAlreadyTimeSigned, isAlreadyUserSigned):
         p = ''
         if tosignstr[-1] != ' ':
             p = ' '
         timestamp = self.getSignatureTimestampString(self.revInfo.timestamp)
-        return p + '{{unsigniert|%s|%s}}' % (
+        if isAlreadyTimeSigned:
+            altText = "|ALT=unvollständig"
+            timeInfo = ''
+        elif isAlreadyUserSigned:
+            altText = "|ALT=ohne Zeitstempel"
+            timeInfo = '|' + timestamp
+        else:
+            altText = ''
+            timeInfo = '|' + timestamp
+            pass
+
+        return p + '{{unsigniert|%s%s%s}}' % (
             user.username,
-            timestamp
+            timeInfo,
+            altText
         )
 
     def getSignatureTimestampString(self, timestamp):
@@ -559,8 +584,18 @@ class TestSigning(unittest.TestCase):
     def checkShouldBeFullySigned(self, pageUrl):
         rev = self.getRevisionInfo(pageUrl)
         bt = BotThread(self.controller.site, rev, self.controller)
-        (res, _) = bt.changeShouldBeHandled()
+        (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
         self.assertTrue(res)
+        self.assertFalse(shouldBeHandledResult.isAlreadyTimeSigned)
+        self.assertFalse(shouldBeHandledResult.isAlreadyUserSigned)
+
+    def checkNeedUserOnlySigning(self, pageUrl):
+        rev = self.getRevisionInfo(pageUrl)
+        bt = BotThread(self.controller.site, rev, self.controller)
+        (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
+        self.assertTrue(res)
+        self.assertTrue(shouldBeHandledResult.isAlreadyTimeSigned)
+        self.assertFalse(shouldBeHandledResult.isAlreadyUserSigned)
 
     def checkShouldNotBeSigned(self, pageUrl):
         rev = self.getRevisionInfo(pageUrl)
@@ -579,25 +614,38 @@ class TestSigning(unittest.TestCase):
         self.checkShouldNotBeSigned(
             'https://de.wikipedia.org/w/index.php?title=Wikipedia%3AVandalismusmeldung&diff=prev&oldid=189343072')  # moved text
 
+#    @unittest.skip('disabled')
     def test_allShouldBeSignedFromPage(self):
         text = pywikibot.Page(
             self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die komplett nachsigniert werden dürfen').get(force=True)
         matches = re.compile(
             r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
         for match in matches:
-            print('Checking %s' % match)
             self.checkShouldBeFullySigned(match)
 
+ #   @unittest.skip('disabled')
     def test_allShouldNotBeSignedFromPage(self):
         text = pywikibot.Page(
             self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die nicht nachsigniert werden dürfen').get(force=True)
         matches = re.compile(
             r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
         for match in matches:
+            print('Checking %s' % match)
             self.checkShouldNotBeSigned(match)
 
+ #   @unittest.skip('disabled')
+    def test_allShouldNeedUserOnlySigningFromPage(self):
+        text = pywikibot.Page(
+            self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die als ohne Benutzerinformation nachsigniert werden dürfen').get(force=True)
+        matches = re.compile(
+            r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
+        for match in matches:
+            print('Checking %s' % match)
+            self.checkNeedUserOnlySigning(match)
 
 # ----------------------------------------------------
+
+
 if __name__ == '__main__':
     try:
         main()
