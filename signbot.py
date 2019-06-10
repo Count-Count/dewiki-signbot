@@ -358,7 +358,7 @@ class BotThread(threading.Thread):
             talktext += '{{subst:Unterschreiben}}'
             if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
                 self.userPut(talk, talk.text, talktext,
-                             comment='Bot: Hinweisvorlage {{subst:Unterschreiben}} ergänzt',
+                             comment='Bot: Hinweis zum [[Hilfe:Signatur|Unterschreiben von Diskussionbeiträgen]] ergänzt',
                              minor=False)
 
         self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
