@@ -550,7 +550,7 @@ class TestSigning(unittest.TestCase):
         newRevision = page._revisions[revId]
         epoch = datetime.datetime.utcfromtimestamp(0)
         oldRevId = newRevision.parent_id
-        return RevisionInfo(page.namespace(), page.title(), "new" if oldRevId is None else "edit", False, newRevision.comment, newRevision.user, oldRevId, revId, (newRevision.timestamp - epoch).total_seconds())
+        return RevisionInfo(page.namespace(), page.title(), "new" if oldRevId==0 else "edit", False, newRevision.comment, newRevision.user, oldRevId, revId, (newRevision.timestamp - epoch).total_seconds())
 
     def checkShouldBeFullySigned(self, pageUrl):
         rev = self.getRevisionInfo(pageUrl)
