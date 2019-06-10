@@ -153,7 +153,7 @@ class Controller():
         self.pageoptout = newpageoptout
 
     def hash(self, str):
-        return base64.b64encode(hashlib.sha3_224(str.encode('utf-8')).digest()).decode('ascii')
+        return base64.b64encode(hashlib.sha224(str.encode('utf-8')).digest()).decode('ascii')
 
     def getKey(self, user):
         return self.hash(self.botkey)+':'+self.hash(self.botkey+':'+user.username)
