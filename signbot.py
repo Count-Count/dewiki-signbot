@@ -363,9 +363,7 @@ class BotThread(threading.Thread):
                              minor=False)
 
         self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
-                        user, self.revInfo.comment, self.revInfo.timestamp, notify)
-
-
+                      user, self.revInfo.comment, self.revInfo.timestamp, notify)
 
     def output(self, info):
         pywikibot.output('%s: %s' % (self.page, info))
