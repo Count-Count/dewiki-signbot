@@ -338,9 +338,10 @@ class BotThread(threading.Thread):
             return
 
         summary = "Bot: Signaturnachtrag für Beitrag von %s: \"%s\"" % (
-            self.userlink(user), self.revInfo.comment)
+            self.userlink(user), self.revInfo.comment) + self.getTestLink()
 
-        if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
+#        if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
+        if True:
             self.userPut(self.page, self.page.get(),
                          '\n'.join(currenttext), comment=summary)
 
@@ -356,13 +357,14 @@ class BotThread(threading.Thread):
                 talktext = ''
 
             talktext += '{{subst:Unterschreiben}}'
-            if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
+#            if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
+            if True:
                 self.userPut(talk, talk.text, talktext,
-                             comment='Bot: Hinweis zum [[Hilfe:Signatur|Unterschreiben von Diskussionbeiträgen]] ergänzt',
+                             comment='Bot: Hinweis zum [[Hilfe:Signatur|Unterschreiben von Diskussionbeiträgen]] ergänzt' + self.getTestLink(),
                              minor=False)
 
-        self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
-                      user, self.revInfo.comment, self.revInfo.timestamp, notify)
+#        self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
+#                      user, self.revInfo.comment, self.revInfo.timestamp, notify)
 
     def output(self, info):
         pywikibot.output('%s: %s' % (self.page, info))
@@ -411,6 +413,9 @@ class BotThread(threading.Thread):
             timeInfo,
             altText
         )
+
+    def getTestLink(self):
+        return ' (Testbetrieb ohne Botflag)'
 
     def getSignatureTimestampString(self, timestamp):
         if os.name == 'nt':
