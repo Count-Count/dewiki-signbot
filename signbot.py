@@ -401,7 +401,7 @@ class BotThread(threading.Thread):
             altText = "|ALT=unvollständig"
             timeInfo = ''
         elif isAlreadyUserSigned:
-            altText = "|ALT=ohne Zeitstempel"
+            altText = "|ALT=ohne (gültige) Zeitangabe"
             timeInfo = '|' + timestamp
         else:
             altText = ''
