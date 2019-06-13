@@ -211,7 +211,9 @@ class BotThread(threading.Thread):
                         self.page.title(insite=True))
             return False, None
 
-        if self.page.title(insite=True).find('/Archiv/') > 0 or self.page.title(insite=True).find('/Archiv ') > 0:
+        if (self.page.title(insite=True).find('/Archiv/') > 0
+            or self.page.title(insite=True).find('/Archiv ') > 0
+                or self.page.title(insite=True).endswith('/Archiv')):
             self.output('Suspected archive page')
             return False, None
 
