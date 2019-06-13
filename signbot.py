@@ -625,6 +625,14 @@ class TestSigning(unittest.TestCase):
         self.assertTrue(shouldBeHandledResult.isAlreadyTimeSigned)
         self.assertFalse(shouldBeHandledResult.isAlreadyUserSigned)
 
+    def checkNeedTimestampOnlySigning(self, pageUrl):
+        rev = self.getRevisionInfo(pageUrl)
+        bt = BotThread(self.controller.site, rev, self.controller)
+        (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
+        self.assertTrue(res)
+        self.assertTrue(shouldBeHandledResult.isAlreadyUserSigned)
+        self.assertFalse(shouldBeHandledResult.isAlreadyTimeSigned)
+
     def checkShouldNotBeSigned(self, pageUrl):
         rev = self.getRevisionInfo(pageUrl)
         bt = BotThread(self.controller.site, rev, self.controller)
@@ -670,6 +678,17 @@ class TestSigning(unittest.TestCase):
         for match in matches:
             print('Checking %s' % match)
             self.checkNeedUserOnlySigning(match)
+
+ #   @unittest.skip('disabled')
+    def test_allShouldNeedTimestampOnlySigningFromPage(self):
+        text = pywikibot.Page(
+            self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die als ohne Zeitstempel nachsigniert werden dürfen').get(force=True)
+        matches = re.compile(
+            r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
+        for match in matches:
+            print('Checking %s' % match)
+            self.checkNeedTimestampOnlySigning(match)
+
 
 # ----------------------------------------------------
 
