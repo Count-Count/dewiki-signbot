@@ -68,7 +68,7 @@ class RevisionInfo():
 
 class Controller():
     logEntries = True
-    doEdits = true
+    doEdits = True
 
     def __init__(self):
         self.site = pywikibot.Site(user='CountCountBot')
