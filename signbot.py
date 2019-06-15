@@ -67,7 +67,8 @@ class RevisionInfo():
 
 
 class Controller():
-    onlyLogEntries = True
+    logEntries = True
+    doEdits = true
 
     def __init__(self):
         self.site = pywikibot.Site(user='CountCountBot')
@@ -369,7 +370,7 @@ class BotThread(threading.Thread):
             return
 
         self.output('Waiting')
-        if not Controller.onlyLogEntries:
+        if Controller.doEdits:
             time.sleep(5 * 60)
         self.output('Woke up')
 
@@ -393,7 +394,7 @@ class BotThread(threading.Thread):
             self.userlink(user), self.revInfo.comment) + self.getTestLink()
 
 #        if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
-        if not Controller.onlyLogEntries:
+        if Controller.doEdits:
             self.userPut(self.page, self.page.get(),
                          '\n'.join(currenttext), comment=summary)
 
@@ -410,13 +411,13 @@ class BotThread(threading.Thread):
 
             talktext += '{{subst:Unterschreiben}}'
 #            if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
-            if not Controller.onlyLogEntries:
+            if Controller.doEdits:
                 self.userPut(talk, talk.text, talktext,
                              comment='Bot: Hinweis zum [[Hilfe:Signatur|Unterschreiben von Diskussionbeiträgen]] ergänzt' + self.getTestLink(
                              ),
                              minor=False)
 
-        if Controller.onlyLogEntries:
+        if Controller.logEntries:
             self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
                           user, self.revInfo.comment, self.revInfo.timestamp, notify)
 
