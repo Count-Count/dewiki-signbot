@@ -250,8 +250,9 @@ class BotThread(threading.Thread):
             self.output('{{sla -- ignored')
             return False, None
 
+        new_lines = new_text.split('\n')
         diff = PatchManager(old_text.split('\n') if old_text else [],
-                            new_text.split('\n'),
+                            new_lines,
                             by_letter=True)
 #        diff.print_hunks()
 
@@ -298,6 +299,9 @@ class BotThread(threading.Thread):
                     if self.isNotExcludedLine(line):
                         tosignnum = j
                         tosignstr = line
+
+                        exactTimeSigned = tosignstr.find(timestamp1) >= 0 or tosignstr.find(timestamp2) >= 0
+
                         timeSigned = self.hasAnySignatureTimestamp(line)
                         if timeSigned:
                             signatureTimestampCount += 1
@@ -321,11 +325,22 @@ class BotThread(threading.Thread):
             self.output('Multiple timestamps found')
             return False, None
 
-        if (hasAnySignatureAllowedUserLink(tosignstr) 
+        if (self.hasAnySignatureAllowedUserLink(tosignstr) 
                 and timeSigned
                 and not exactTimeSigned):
             self.output('Timestamp and other user link found - likely copied')
             return False, None
+
+        if (not timeSigned and not userSigned and
+            self.isPostscriptum(tosignstr) and
+                tosignnum > 1):
+                checkLineNo = tosignnum - 1
+                if new_lines[checkLineNo].strip() == "" and checkLineNo > 0:
+                    checkLineNo -= 1
+                if (self.isUserSigned(user, new_lines[checkLineNo]) and
+                    self.hasAnySignatureTimestamp(new_lines[checkLineNo])):
+                    self.output('Postcriptum found')
+                    return False, None
 
         # all checks passed
         return True, ShouldBeHandledResult(tosignnum, tosignstr, timeSigned, userSigned)
@@ -384,6 +399,9 @@ class BotThread(threading.Thread):
 
 #        self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
 #                      user, self.revInfo.comment, self.revInfo.timestamp, notify)
+
+    def isPostscriptum(self, line):
+        return re.match(r'^(:+\s*)?(PS|P\. ?S\.|Nachtrag|Postscriptum)\s*\S', line, re.I) is not None
 
     def output(self, info):
         pywikibot.output('%s: %s' % (self.page, info))
@@ -481,7 +499,6 @@ class BotThread(threading.Thread):
 
         return False
 
-    @staticmethod
     def hasAnySignatureAllowedUserLink(self, text):
         for wikilink in pywikibot.link_regex.finditer(text):
             if not wikilink.group('title').strip():
@@ -684,24 +701,27 @@ class TestSigning(unittest.TestCase):
         (res, _) = bt.changeShouldBeHandled()
         self.assertFalse(res)
 
-#    @unittest.skip('disabled')
+    @unittest.skip('disabled')
     def test_needToBeFullySigned(self):
         self.checkNeedsToBeFullySigned(
             'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion%3AAgathenon&diff=prev&oldid=189352195')  # _ in special directive
         pass
 
- #   @unittest.skip('disabled')
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
             'https://de.wikipedia.org/w/index.php?title=Diskussion%3APostgender&diff=prev&oldid=189397879')  # _ in special directive
         self.checkDoesNotNeedToBeSigned(
             'https://de.wikipedia.org/w/index.php?title=Wikipedia%3AVandalismusmeldung&diff=prev&oldid=189343072')  # moved text
+        self.checkDoesNotNeedToBeSigned('https://de.wikipedia.org/w/index.php?title=Wikipedia:L%C3%B6schkandidaten/11._Juni_2019&diff=prev&oldid=189460775&diffmode=source')  # Postscriptum
+        self.checkDoesNotNeedToBeSigned(
+            'https://de.wikipedia.org/w/index.php?title=Wikipedia_Diskussion:Wiki_Loves_Earth_2019/Deutschland/Organisation&diff=prev&oldid=189464146&diffmode=source')  # Postscriptum
 
+    @unittest.skip('disabled')
     def test_needsUserOnlySigning(self):
         self.checkNeedsUserOnlySigning(
             'https://de.wikipedia.org/w/index.php?title=Wikipedia:L%C3%B6schkandidaten/5._Juni_2019&diff=prev&oldid=189333235&diffmode=source')
 
-#    @unittest.skip('disabled')
+    @unittest.skip('disabled')
     def test_allNeedToBeFullySigned(self):
         text = pywikibot.Page(
             self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die komplett nachsigniert werden dürfen').get(force=True)
@@ -710,7 +730,7 @@ class TestSigning(unittest.TestCase):
         for match in matches:
             self.checkNeedsToBeFullySigned(match)
 
-#    @unittest.skip('disabled')
+    @unittest.skip('disabled')
     def test_allDoNotNeedToBeSigned(self):
         text = pywikibot.Page(
             self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die nicht nachsigniert werden dürfen').get(force=True)
@@ -719,7 +739,7 @@ class TestSigning(unittest.TestCase):
         for match in matches:
             self.checkDoesNotNeedToBeSigned(match)
 
-#    @unittest.skip('disabled')
+    @unittest.skip('disabled')
     def test_allNeedUserOnlySigning(self):
         text = pywikibot.Page(
             self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die als ohne Benutzerinformation nachsigniert werden dürfen').get(force=True)
@@ -728,7 +748,7 @@ class TestSigning(unittest.TestCase):
         for match in matches:
             self.checkNeedsUserOnlySigning(match)
 
-#    @unittest.skip('disabled')
+    @unittest.skip('disabled')
     def test_allNeedTimestampOnlySigning(self):
         text = pywikibot.Page(
             self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die als ohne Zeitstempel nachsigniert werden dürfen').get(force=True)
@@ -737,7 +757,7 @@ class TestSigning(unittest.TestCase):
         for match in matches:
             self.checkNeedsTimestampOnlySigning(match)
 
-#    @unittest.skip('disabled')
+    @unittest.skip('disabled')
     def test_timestampMatching(self):
         date = datetime.datetime.now()
         d = datetime.timedelta(days=1)
