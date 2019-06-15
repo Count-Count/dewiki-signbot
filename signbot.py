@@ -347,7 +347,8 @@ class BotThread(threading.Thread):
                 self.output('Postcriptum found')
                 return False, None
 
-        if (new_lines[insertStartLine].strip().startswith('{{') and
+        if ((new_lines[insertStartLine].strip().startswith('{{')
+             or tosignstr.strip().startswith('{{')) and
                 tosignstr.strip().endswith('}}')):
             precedingSignatureOrSectionFound = False
             for i in range(0, insertStartLine):
@@ -730,6 +731,8 @@ class TestSigning(unittest.TestCase):
         pass
 
     def test_doNotNeedToBeSigned(self):
+        self.checkDoesNotNeedToBeSigned(
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:146.185.69.133&diff=prev&oldid=189565765&diffmode=source')  # template at the beginning
         self.checkDoesNotNeedToBeSigned(
             'https://de.wikipedia.org/w/index.php?title=Diskussion%3APostgender&diff=prev&oldid=189397879')  # _ in special directive
         self.checkDoesNotNeedToBeSigned(
