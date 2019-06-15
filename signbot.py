@@ -70,7 +70,6 @@ class Controller():
     def __init__(self):
         self.site = pywikibot.Site(user='CountCountBot')
         self.site.login()  # T153541
-        self.timezone = pytz.timezone('Europe/Berlin')
         self.reloadRegex()
         self.reloadOptOut()
         self.useroptin = []  # not implemented
@@ -195,6 +194,8 @@ class ShouldBeHandledResult:
 
 
 class BotThread(threading.Thread):
+    timezone = pytz.timezone('Europe/Berlin')
+
     def __init__(self, site, revInfo, controller):
         threading.Thread.__init__(self)
         self.site = site
@@ -268,8 +269,11 @@ class BotThread(threading.Thread):
         timestamp2 = self.getSignatureTimestampString(
             self.revInfo.timestamp - 60)
 
+        exactTimeSigned = False
         timeSigned = False
         userSigned = False
+
+        signatureTimestampCount = 0
 
         for tag, i1, i2, j1, j2 in group:
             if tag == 'insert':
@@ -294,8 +298,10 @@ class BotThread(threading.Thread):
                     if self.isNotExcludedLine(line):
                         tosignnum = j
                         tosignstr = line
-                        timeSigned = tosignstr.find(
-                            timestamp1) >= 0 or tosignstr.find(timestamp2) >= 0
+                        timeSigned = self.hasAnySignatureTimestamp(line)
+                        if timeSigned:
+                            signatureTimestampCount += 1
+
                         userSigned = self.isUserSigned(user, tosignstr)
                         if timeSigned and userSigned:
                             self.controller.clearnotify(user)
@@ -309,6 +315,16 @@ class BotThread(threading.Thread):
 
         if tosignstr is False:
             self.output('No inserts')
+            return False, None
+
+        if signatureTimestampCount > 1:
+            self.output('Multiple timestamps found')
+            return False, None
+
+        if (hasAnySignatureAllowedUserLink(tosignstr) 
+                and timeSigned
+                and not exactTimeSigned):
+            self.output('Timestamp and other user link found - likely copied')
             return False, None
 
         # all checks passed
@@ -404,7 +420,7 @@ class BotThread(threading.Thread):
             altText = "|ALT=unvollständig"
             timeInfo = ''
         elif isAlreadyUserSigned:
-            altText = "|ALT=ohne (gültige) Zeitangabe"
+            altText = "|ALT=ohne (gültigen) Zeitstempel"
             timeInfo = '|' + timestamp
         else:
             altText = ''
@@ -420,14 +436,15 @@ class BotThread(threading.Thread):
     def getTestLink(self):
         return ' (Testbetrieb ohne Botflag)'
 
-    def getSignatureTimestampString(self, timestamp):
+    @staticmethod
+    def getSignatureTimestampString(timestamp):
         if os.name == 'nt':
             time = pytz.utc.localize(pywikibot.Timestamp.utcfromtimestamp(timestamp)) \
-                .astimezone(self.controller.timezone)
+                .astimezone(BotThread.timezone)
             return time.strftime('%H:%M, ')+time.strftime('%e').replace(' ', '')+time.strftime('. %b. %Y (%Z)')
         else:
             return pytz.utc.localize(pywikibot.Timestamp.utcfromtimestamp(timestamp)) \
-                .astimezone(self.controller.timezone).strftime('%H:%M, %-d. %b. %Y (%Z)')
+                .astimezone(BotThread.timezone).strftime('%H:%M, %-d. %b. %Y (%Z)')
 
     def userlink(self, user):
         if user.isAnonymous():
@@ -463,6 +480,27 @@ class BotThread(threading.Thread):
             return True
 
         return False
+
+    @staticmethod
+    def hasAnySignatureAllowedUserLink(self, text):
+        for wikilink in pywikibot.link_regex.finditer(text):
+            if not wikilink.group('title').strip():
+                continue
+            try:
+                link = pywikibot.Link(wikilink.group('title'),
+                                      source=self.site)
+                link.parse()
+            except pywikibot.Error:
+                continue
+            if link.namespace in [2, 3] and link.title.find('/') == -1:
+                return True
+            if link.namespace == -1 and link.title.startswith('Beiträge/'):
+                return True
+        return False
+
+    @staticmethod
+    def hasAnySignatureTimestamp(line):
+        return re.search(r'[0-9]{2}:[0-9]{2}, [123]?[0-9]\. (?:Jan\.|Feb\.|Mär\.|Apr\.|Mai|Jun\.|Jul\.|Aug\.|Sep\.|Okt\.|Nov\.|Dez\.) 2[0-9]{3} \(CES?T\)', line) is not None
 
     def isNotExcludedLine(self, line):
         # remove non-functional parts and categories
@@ -600,8 +638,7 @@ class TestSigning(unittest.TestCase):
         revId = int(queryVars['oldid'][0])
         page = pywikibot.Page(self.controller.site, title)
         if not page.exists():
-            pywikibot.output(pageUrl)
-            raise Exception("%s - not found" % pageUrl)
+            raise Exception("%s - page not found" % title)
         self.assertTrue(page.exists())
         self.controller.site.loadrevisions(page, startid=revId, total=1)
         newRevision = page._revisions[revId]
@@ -609,85 +646,104 @@ class TestSigning(unittest.TestCase):
         oldRevId = newRevision.parent_id
         return RevisionInfo(page.namespace(), page.title(), "new" if oldRevId == 0 else "edit", False, newRevision.comment, newRevision.user, oldRevId, revId, (newRevision.timestamp - epoch).total_seconds())
 
-    def checkShouldBeFullySigned(self, pageUrl):
+    def checkNeedsToBeFullySigned(self, pageUrl):
         rev = self.getRevisionInfo(pageUrl)
         bt = BotThread(self.controller.site, rev, self.controller)
         (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
-        self.assertTrue(res)
-        self.assertFalse(shouldBeHandledResult.isAlreadyTimeSigned)
-        self.assertFalse(shouldBeHandledResult.isAlreadyUserSigned)
+        self.assertTrue(
+            res, "Should need full signing but not recognized as unsigned: %s" % pageUrl)
+        self.assertFalse(shouldBeHandledResult.isAlreadyTimeSigned,
+                         "Should not be timestamp signed but is: %s" % pageUrl)
+        self.assertFalse(shouldBeHandledResult.isAlreadyUserSigned,
+                         "Should not be user signed but is: %s" % pageUrl)
 
-    def checkNeedUserOnlySigning(self, pageUrl):
+    def checkNeedsUserOnlySigning(self, pageUrl):
         rev = self.getRevisionInfo(pageUrl)
         bt = BotThread(self.controller.site, rev, self.controller)
         (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
-        self.assertTrue(res)
-        self.assertTrue(shouldBeHandledResult.isAlreadyTimeSigned)
-        self.assertFalse(shouldBeHandledResult.isAlreadyUserSigned)
+        self.assertTrue(
+            res, "Should need user signing but not recognized as unsigned: %s" % pageUrl)
+        self.assertTrue(shouldBeHandledResult.isAlreadyTimeSigned,
+                        "Should be timestamp signed but is not: %s" % pageUrl)
+        self.assertFalse(shouldBeHandledResult.isAlreadyUserSigned,
+                         "Should not be user signed but is: %s" % pageUrl)
 
-    def checkNeedTimestampOnlySigning(self, pageUrl):
+    def checkNeedsTimestampOnlySigning(self, pageUrl):
         rev = self.getRevisionInfo(pageUrl)
         bt = BotThread(self.controller.site, rev, self.controller)
         (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
-        self.assertTrue(res)
-        self.assertTrue(shouldBeHandledResult.isAlreadyUserSigned)
-        self.assertFalse(shouldBeHandledResult.isAlreadyTimeSigned)
+        self.assertTrue(res, "Should need timestamp signing but not recognized as unsigned: %s" % pageUrl)
+        self.assertTrue(shouldBeHandledResult.isAlreadyUserSigned,
+                        "Should be user signed bot is not: %s" % pageUrl)
+        self.assertFalse(shouldBeHandledResult.isAlreadyTimeSigned,
+                         "Should not be timestamp signed but is: %s" % pageUrl)
 
-    def checkShouldNotBeSigned(self, pageUrl):
+    def checkDoesNotNeedToBeSigned(self, pageUrl):
         rev = self.getRevisionInfo(pageUrl)
         bt = BotThread(self.controller.site, rev, self.controller)
         (res, _) = bt.changeShouldBeHandled()
         self.assertFalse(res)
 
-    def test_allShouldBeSigned(self):
-        self.checkShouldBeFullySigned(
+#    @unittest.skip('disabled')
+    def test_needToBeFullySigned(self):
+        self.checkNeedsToBeFullySigned(
             'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion%3AAgathenon&diff=prev&oldid=189352195')  # _ in special directive
         pass
 
-    def test_allShouldNotBeSigned(self):
-        self.checkShouldNotBeSigned(
+ #   @unittest.skip('disabled')
+    def test_doNotNeedToBeSigned(self):
+        self.checkDoesNotNeedToBeSigned(
             'https://de.wikipedia.org/w/index.php?title=Diskussion%3APostgender&diff=prev&oldid=189397879')  # _ in special directive
-        self.checkShouldNotBeSigned(
+        self.checkDoesNotNeedToBeSigned(
             'https://de.wikipedia.org/w/index.php?title=Wikipedia%3AVandalismusmeldung&diff=prev&oldid=189343072')  # moved text
 
+    def test_needsUserOnlySigning(self):
+        self.checkNeedsUserOnlySigning(
+            'https://de.wikipedia.org/w/index.php?title=Wikipedia:L%C3%B6schkandidaten/5._Juni_2019&diff=prev&oldid=189333235&diffmode=source')
+
 #    @unittest.skip('disabled')
-    def test_allShouldBeSignedFromPage(self):
+    def test_allNeedToBeFullySigned(self):
         text = pywikibot.Page(
             self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die komplett nachsigniert werden dürfen').get(force=True)
         matches = re.compile(
             r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
         for match in matches:
-            self.checkShouldBeFullySigned(match)
+            self.checkNeedsToBeFullySigned(match)
 
- #   @unittest.skip('disabled')
-    def test_allShouldNotBeSignedFromPage(self):
+#    @unittest.skip('disabled')
+    def test_allDoNotNeedToBeSigned(self):
         text = pywikibot.Page(
             self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die nicht nachsigniert werden dürfen').get(force=True)
         matches = re.compile(
             r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
         for match in matches:
-            print('Checking %s' % match)
-            self.checkShouldNotBeSigned(match)
+            self.checkDoesNotNeedToBeSigned(match)
 
- #   @unittest.skip('disabled')
-    def test_allShouldNeedUserOnlySigningFromPage(self):
+#    @unittest.skip('disabled')
+    def test_allNeedUserOnlySigning(self):
         text = pywikibot.Page(
             self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die als ohne Benutzerinformation nachsigniert werden dürfen').get(force=True)
         matches = re.compile(
             r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
         for match in matches:
-            print('Checking %s' % match)
-            self.checkNeedUserOnlySigning(match)
+            self.checkNeedsUserOnlySigning(match)
 
- #   @unittest.skip('disabled')
-    def test_allShouldNeedTimestampOnlySigningFromPage(self):
+#    @unittest.skip('disabled')
+    def test_allNeedTimestampOnlySigning(self):
         text = pywikibot.Page(
             self.controller.site, 'Benutzer:CountCountBot/Testcases/Beiträge die als ohne Zeitstempel nachsigniert werden dürfen').get(force=True)
         matches = re.compile(
             r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+', re.I).findall(text)
         for match in matches:
-            print('Checking %s' % match)
-            self.checkNeedTimestampOnlySigning(match)
+            self.checkNeedsTimestampOnlySigning(match)
+
+#    @unittest.skip('disabled')
+    def test_timestampMatching(self):
+        date = datetime.datetime.now()
+        d = datetime.timedelta(days=1)
+        for d in range(1, 1000):
+            s = BotThread.getSignatureTimestampString(date.timestamp())
+            self.assertTrue(BotThread.hasAnySignatureTimestamp(s), "Timestamp does not match regex: %s" % s)
 
 
 # ----------------------------------------------------
@@ -695,7 +751,7 @@ class TestSigning(unittest.TestCase):
 
 if __name__ == '__main__':
     try:
-        main()
-#        unittest.main()
+#        main()
+        unittest.main()
     finally:
         pywikibot.stopme()
