@@ -789,6 +789,8 @@ class TestSigning(unittest.TestCase):
 #    @unittest.skip('disabled')
     def test_needsUserOnlySigning(self):
         self.checkNeedsUserOnlySigning(
+            'https://de.wikipedia.org/w/index.php?title=Wikipedia:Bots/Antr%C3%A4ge_auf_Botflag&diff=prev&oldid=189592572&diffmode=source')  # on opt-in page
+        self.checkNeedsUserOnlySigning(
             'https://de.wikipedia.org/w/index.php?title=Wikipedia:L%C3%B6schkandidaten/5._Juni_2019&diff=prev&oldid=189333235&diffmode=source')
 
 #    @unittest.skip('disabled')
