@@ -75,6 +75,7 @@ class Controller():
         self.site.login()  # T153541
         self.reloadRegex()
         self.reloadOptOut()
+        self.reloadOptIn()
         self.useroptin = []  # not implemented
         self.botkey = os.environ.get('REDIS_KEY')
         if not self.botkey or '' == self.botkey.strip():
@@ -101,10 +102,16 @@ class Controller():
                 pywikibot.output('opt-out page changed')
                 threading.Thread(target=self.reloadOptOut).start()
 
+            if change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/Opt-In'):
+                pywikibot.output('opt-in page changed')
+                threading.Thread(target=self.reloadOptIn).start()
+
             # Talk page or project page, bot edits excluded
             if (
                 (not change['bot']) and
-                (change['namespace'] == 4 or change['namespace'] % 2 == 1) and
+                (change['namespace'] == 4
+                    or change['namespace'] % 2 == 1
+                    or change['title'] in self.pageoptin) and
                 (change['type'] in ['edit', 'new']) and
                 ('nosig!' not in change['comment']) and
                 (not change['comment'].startswith('Bot: '))
@@ -153,6 +160,24 @@ class Controller():
                 newpageoptout.add(link.ns_title(onsite=self.site).strip())
         self.useroptout = newuseroptout
         self.pageoptout = newpageoptout
+
+    def reloadOptIn(self):
+        pywikibot.output('Reloading optin list')
+        optinPage = pywikibot.Page(self.site, 'User:CountCountBot/Opt-In')
+        newpageoptin = set()
+        for wikilink in pywikibot.link_regex.finditer(
+                pywikibot.textlib.removeDisabledParts(optinPage.get(force=True))):
+            if not wikilink.group('title').strip():
+                continue
+            try:
+                link = pywikibot.Link(wikilink.group('title'),
+                                      source=self.site)
+                link.parse()
+            except pywikibot.Error:
+                continue
+            if link.namespace != 0:
+                newpageoptin.add(link.ns_title(onsite=self.site).strip())
+        self.pageoptin = newpageoptin
 
     def hash(self, str):
         return base64.b64encode(hashlib.sha224(str.encode('utf-8')).digest()).decode('ascii')
