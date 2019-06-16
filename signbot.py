@@ -106,7 +106,7 @@ class Controller():
                 (not change['bot']) and
                 (change['namespace'] == 4 or change['namespace'] % 2 == 1) and
                 (change['type'] in ['edit', 'new']) and
-                ('!nosign!' not in change['comment']) and
+                ('nosig!' not in change['comment']) and
                 (not change['comment'].startswith('Bot: '))
             ):
                 t = BotThread(
