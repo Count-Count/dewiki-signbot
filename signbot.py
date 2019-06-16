@@ -21,6 +21,7 @@ import hashlib
 import base64
 import locale
 import pytz
+import traceback
 
 import pywikibot
 from pywikibot.comms.eventstreams import site_rc_listener
@@ -229,6 +230,7 @@ class BotThread(threading.Thread):
         self.site = site
         self.revInfo = revInfo
         self.controller = controller
+        self.page = None
 
     def changeShouldBeHandled(self):
         self.page = pywikibot.Page(
@@ -404,6 +406,12 @@ class BotThread(threading.Thread):
         return True, ShouldBeHandledResult(tosignnum, tosignstr, timeSigned, userSigned)
 
     def run(self):
+        try:
+            self.run0()
+        except Exception as e:
+            self.error(traceback.format_exc())
+
+    def run0(self):
         res, shouldBeHandledResult = self.changeShouldBeHandled()
         if not res:
             return
@@ -466,6 +474,9 @@ class BotThread(threading.Thread):
 
     def output(self, info):
         pywikibot.output('%s: %s' % (self.page, info))
+
+    def error(self, info):
+        pywikibot.error('%s: %s' % (self.page, info))
 
     def getTags(self):
         req = self.site._simple_request(
