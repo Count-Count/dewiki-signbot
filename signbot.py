@@ -628,10 +628,12 @@ class BotThread(threading.Thread):
 
     def isDiscussion(self, page):
         # TODO: sandbox
-        # TODO: opt-in
 
         # __NEWSECTIONLINK__ -> True
         if 'newsectionlink' in self.page.properties():
+            return True
+
+        if page.title() in controller.pageoptin:
             return True
 
         if page.title().startswith('Wikipedia:Löschkandidaten/'):
