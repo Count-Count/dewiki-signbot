@@ -336,6 +336,19 @@ class BotThread(threading.Thread):
             self.output('Timestamp and other user link found - likely copied')
             return False, None
 
+        if not timeSigned and not userSigned:
+            for lineNo in range(tosignnum, len(new_lines)):
+                line = new_lines[lineNo].strip()
+                if (self.isUserSigned(user, line) and
+                        self.hasAnySignatureTimestamp(line)):
+                    self.output(
+                        'Line added to own already signed text')
+                    return False, None
+                elif line.startswith('='):
+                    break
+                elif self.hasAnySignatureTimestamp(line):
+                    break
+
         if (not timeSigned and not userSigned and
             self.isPostscriptum(tosignstr) and
                 tosignnum > 1):
