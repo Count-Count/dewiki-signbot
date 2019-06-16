@@ -397,7 +397,7 @@ class BotThread(threading.Thread):
 #        if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
         if Controller.doEdits:
             self.userPut(self.page, self.page.get(),
-                         '\n'.join(currenttext), comment=summary)
+                         '\n'.join(currenttext), comment=summary, botflag=False)
 
         notify = self.controller.checknotify(user)
         if notify:
@@ -416,7 +416,8 @@ class BotThread(threading.Thread):
                 self.userPut(talk, talk.text, talktext,
                              comment='Bot: Hinweis zum [[Hilfe:Signatur|Unterschreiben von Diskussionbeiträgen]] ergänzt' + self.getTestLink(
                              ),
-                             minor=False)
+                             minor=False,
+                             botflag=False)
 
         if Controller.logEntries:
             self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
@@ -623,7 +624,7 @@ class BotThread(threading.Thread):
         text += "Generierte Bot-Bearbeitung: ''(%s)''\n<pre>%s</pre>\n\n" % (
             summary, botLine)
         logPage.text = text
-        logPage.save(summary='Neuer Log-Eintrag.')
+        logPage.save(summary='Neuer Log-Eintrag.', botflag=True)
 
     def userPut(self, page, oldtext, newtext, **kwargs):
         if oldtext == newtext:
