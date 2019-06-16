@@ -633,7 +633,7 @@ class BotThread(threading.Thread):
         if 'newsectionlink' in self.page.properties():
             return True
 
-        if page.title() in controller.pageoptin:
+        if page.title() in self.controller.pageoptin:
             return True
 
         if page.title().startswith('Wikipedia:Löschkandidaten/'):
