@@ -742,6 +742,8 @@ class TestSigning(unittest.TestCase):
             'https://de.wikipedia.org/w/index.php?title=Wikipedia:L%C3%B6schkandidaten/11._Juni_2019&diff=prev&oldid=189460775&diffmode=source')  # Postscriptum
         self.checkDoesNotNeedToBeSigned(
             'https://de.wikipedia.org/w/index.php?title=Wikipedia_Diskussion:Wiki_Loves_Earth_2019/Deutschland/Organisation&diff=prev&oldid=189464146&diffmode=source')  # Postscriptum
+        self.checkDoesNotNeedToBeSigned(
+            'https://de.wikipedia.org/w/index.php?title=Wikipedia:Caf%C3%A9&diff=prev&oldid=189588024&diffmode=source')  # line inserted in own section
 
 #    @unittest.skip('disabled')
     def test_needsUserOnlySigning(self):
