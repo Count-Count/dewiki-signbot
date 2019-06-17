@@ -175,6 +175,7 @@ class TestSigning(unittest.TestCase):
 
 #    @unittest.skip('disabled')
     def test_timestampMatching(self):
+        locale.setlocale(locale.LC_ALL, 'de_DE.utf8')
         date = datetime.datetime.now()
         d = datetime.timedelta(days=1)
         for i in range(1, 250):
