@@ -9,6 +9,7 @@
 # Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
 # https://creativecommons.org/licenses/by-sa/3.0/
 import datetime
+import locale
 import re
 import unittest
 from urllib.parse import parse_qs, urlparse
@@ -21,6 +22,7 @@ from signbot import BotThread, Controller, RevisionInfo
 class TestSigning(unittest.TestCase):
 
     def setUp(self):
+        locale.setlocale(locale.LC_ALL, 'de_DE.utf8')
         super(TestSigning, self).setUp()
         self.controller = Controller()
 
@@ -130,7 +132,7 @@ class TestSigning(unittest.TestCase):
         text = pywikibot.Page(
             self.controller.site,
             'Benutzer:CountCountBot/Testcases/Beiträge die komplett nachsigniert werden dürfen'
-            ).get(force=True)
+        ).get(force=True)
         matches = re.compile(
             r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+',
             re.I).findall(text)
@@ -142,7 +144,7 @@ class TestSigning(unittest.TestCase):
         text = pywikibot.Page(
             self.controller.site,
             'Benutzer:CountCountBot/Testcases/Beiträge die nicht nachsigniert werden dürfen'
-            ).get(force=True)
+        ).get(force=True)
         matches = re.compile(
             r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+',
             re.I).findall(text)
@@ -154,7 +156,7 @@ class TestSigning(unittest.TestCase):
         text = pywikibot.Page(
             self.controller.site,
             'Benutzer:CountCountBot/Testcases/Beiträge die als ohne Benutzerinformation nachsigniert werden dürfen'
-            ).get(force=True)
+        ).get(force=True)
         matches = re.compile(
             r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+',
             re.I).findall(text)
@@ -166,7 +168,7 @@ class TestSigning(unittest.TestCase):
         text = pywikibot.Page(
             self.controller.site,
             'Benutzer:CountCountBot/Testcases/Beiträge die als ohne Zeitstempel nachsigniert werden dürfen'
-            ).get(force=True)
+        ).get(force=True)
         matches = re.compile(
             r'https://de.wikipedia.org/w/index\.php\?title=[^] \n]+',
             re.I).findall(text)
@@ -175,7 +177,6 @@ class TestSigning(unittest.TestCase):
 
 #    @unittest.skip('disabled')
     def test_timestampMatching(self):
-        locale.setlocale(locale.LC_ALL, 'de_DE.utf8')
         date = datetime.datetime.now()
         d = datetime.timedelta(days=1)
         for i in range(1, 250):
