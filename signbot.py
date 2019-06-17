@@ -677,7 +677,7 @@ class BotThread(threading.Thread):
         text += "Generierte Bot-Bearbeitung: ''(%s)''\n<pre>%s</pre>\n\n" % (
             summary, botLine)
         logPage.text = text
-        logPage.save(summary='Neuer Log-Eintrag.', botflag=True)
+        logPage.save(summary='Neuer Log-Eintrag.', botflag=False)
 
     def userPut(self, page, oldtext, newtext, **kwargs):
         if oldtext == newtext:
