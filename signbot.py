@@ -526,7 +526,7 @@ class BotThread(threading.Thread):
         )
 
     def getTestLink(self):
-        return ' (Testbetrieb ohne Botflag)'
+        return ' (Testbetrieb)'
 
     @staticmethod
     def getSignatureTimestampString(timestamp):
