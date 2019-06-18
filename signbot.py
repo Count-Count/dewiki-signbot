@@ -194,6 +194,8 @@ class Controller():
     def checknotify(self, user):
         if user.isAnonymous():
             return False
+        if user.editCount() > 500:
+            return False
         reset = int(time.time()) + 60*60*24*30
         key = self.getKey(user)
         p = self.redis.pipeline()
