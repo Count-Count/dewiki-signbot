@@ -70,7 +70,7 @@ class RevisionInfo():
 
 
 class Controller():
-    logEntries = True
+    logEntries = False
     doEdits = True
 
     def __init__(self):
