@@ -179,7 +179,7 @@ class TestSigning(unittest.TestCase):
     def test_timestampMatching(self):
         date = datetime.datetime.now()
         d = datetime.timedelta(days=1)
-        for i in range(1, 250):
+        for i in range(1, 365):
             date += d
             with self.subTest(date=date):
                 s = BotThread.getSignatureTimestampString(date.timestamp())
