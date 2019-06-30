@@ -278,9 +278,9 @@ class BotThread(threading.Thread):
 
         new_text = self.page.getOldVersion(self.revInfo.newRevision)
 
-        if '{{sla' in new_text.lower() \
-                or '{{löschen' in new_text.lower() \
-                or '{{delete' in new_text.lower():
+        if ('{{sla' in new_text.lower()
+                or '{{löschen' in new_text.lower()
+                or '{{delete' in new_text.lower()):
             self.output('{{sla -- ignored')
             return False, None
 
