@@ -101,11 +101,14 @@ class TestSigning(unittest.TestCase):
 
 #    @unittest.skip('disabled')
     def test_doNotNeedToBeSigned(self):
+        self.checkDoesNotNeedToBeSigned(
+            # ...
+            'https://de.wikipedia.org/w/index.php?title=Wikipedia:Sperrpr%C3%BCfung&diff=prev&oldid=189833590&diffmode=source')
+        self.checkDoesNotNeedToBeSigned(
             # moderation on blacklisted site
-        self.checkDoesNotNeedToBeSigned(
             'https://de.wikipedia.org/w/index.php?title=Wikipedia:L%C3%B6schkandidaten/Urheberrechtsverletzungen&diff=prev&oldid=189873532&diffmode=source')
-        # subst:OTRS
         self.checkDoesNotNeedToBeSigned(
+            # subst:OTRS
             'https://de.wikipedia.org/w/index.php?title=Diskussion:Centrum_f%C3%BCr_Asienwissenschaften_und_Transkulturelle_Studien&oldid=189740023')
         self.checkDoesNotNeedToBeSigned(
             # template at the beginning

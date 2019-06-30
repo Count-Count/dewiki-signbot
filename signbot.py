@@ -191,10 +191,13 @@ class Controller():
     def getSetKey(self):
         return self.hash(self.botkey)+':'+self.hash(self.botkey+':'+self.botkey+':set')
 
+    def isExperiencedUser(self, user):
+        return not user.isAnonymous() and user.editCount() > 500
+
     def checknotify(self, user):
         if user.isAnonymous():
             return False
-        if user.editCount() > 500:
+        if self.isExperiencedUser(user):
             return False
         reset = int(time.time()) + 60*60*24*30
         key = self.getKey(user)
@@ -362,10 +365,15 @@ class BotThread(threading.Thread):
             return False, None
 
         if (self.hasAnySignatureAllowedUserLink(tosignstr)
-                and timeSigned
-                and not exactTimeSigned):
-            self.output('Timestamp and other user link found - likely copied')
-            return False, None
+                and timeSigned):
+            if not exactTimeSigned:
+                self.output(
+                    'Timestamp and other user link found - likely copied')
+                return False, None
+            elif self.controller.isExperiencedUser(user):
+                self.output(
+                    'Other user link found with exact timestamp - likely copied')
+                return False, None
 
         if not timeSigned and not userSigned:
             for lineNo in range(tosignnum, len(new_lines)):
