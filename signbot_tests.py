@@ -101,7 +101,10 @@ class TestSigning(unittest.TestCase):
 
 #    @unittest.skip('disabled')
     def test_doNotNeedToBeSigned(self):
-            # subst:OTRS
+            # moderation on blacklisted site
+        self.checkDoesNotNeedToBeSigned(
+            'https://de.wikipedia.org/w/index.php?title=Wikipedia:L%C3%B6schkandidaten/Urheberrechtsverletzungen&diff=prev&oldid=189873532&diffmode=source')
+        # subst:OTRS
         self.checkDoesNotNeedToBeSigned(
             'https://de.wikipedia.org/w/index.php?title=Diskussion:Centrum_f%C3%BCr_Asienwissenschaften_und_Transkulturelle_Studien&oldid=189740023')
         self.checkDoesNotNeedToBeSigned(
