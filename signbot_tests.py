@@ -102,7 +102,11 @@ class TestSigning(unittest.TestCase):
 #    @unittest.skip('disabled')
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
-            # ...
+            # Portal discussion page abused as archive
+            'https://de.wikipedia.org/w/index.php?title=Portal_Diskussion:Hannover/Artikel_des_Monats&diff=prev&oldid=190023146&diffmode=source')
+        self.checkDoesNotNeedToBeSigned(
+            # Portal discussion page abused as archive (II)
+            'https://de.wikipedia.org/w/index.php?title=Portal_Diskussion:Rheinhessen/Neue_Artikel&diff=prev&oldid=187852104&diffmode=source')
         self.checkDoesNotNeedToBeSigned(
             # Inserted comment (reorganized) with same timestamp
             'https://de.wikipedia.org/w/index.php?title=Wikipedia:Sperrpr%C3%BCfung&diff=prev&oldid=189833590&diffmode=source')

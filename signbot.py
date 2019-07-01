@@ -255,6 +255,11 @@ class BotThread(threading.Thread):
             self.output('Suspected archive page')
             return False, None
 
+        if (self.page.title(insite=True).startswith('Portal Diskussion:')
+                and (self.page.title(insite=True).endswith('/Artikel des Monats')
+                     or self.page.title(insite=True).endswith('/Neue Artikel'))):
+            return False, None
+
         if self.page.isRedirectPage():
             self.output('Redirect')
             return False, None
