@@ -103,6 +103,8 @@ class TestSigning(unittest.TestCase):
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
             # ...
+        self.checkDoesNotNeedToBeSigned(
+            # Inserted comment (reorganized) with same timestamp
             'https://de.wikipedia.org/w/index.php?title=Wikipedia:Sperrpr%C3%BCfung&diff=prev&oldid=189833590&diffmode=source')
         self.checkDoesNotNeedToBeSigned(
             # moderation on blacklisted site
