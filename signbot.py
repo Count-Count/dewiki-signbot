@@ -70,7 +70,7 @@ class RevisionInfo():
 
 
 class Controller():
-    logEntries = False
+    logEntries = True
     doEdits = True
 
     def __init__(self):
@@ -477,7 +477,7 @@ class BotThread(threading.Thread):
                              minor=False,
                              botflag=False)
 
-        if Controller.logEntries:
+        if self.controller.isExperiencedUser(user) and Controller.logEntries:
             self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
                           user, self.revInfo.comment, self.revInfo.timestamp, notify)
 
