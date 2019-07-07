@@ -601,7 +601,8 @@ class BotThread(threading.Thread):
                 link.parse()
             except pywikibot.Error:
                 continue
-            if link.namespace in [2, 3] and link.title.find('/') == -1:
+            # Certain Bot signatures lead to subpages sometimes
+            if link.namespace in [2, 3] and (link.title.find('/') == -1 or link.title.startswith('Luke081515Bot/')):
                 return True
             if link.namespace == -1 and link.title.startswith('Beiträge/'):
                 return True
