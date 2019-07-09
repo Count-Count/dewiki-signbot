@@ -102,9 +102,6 @@ class TestSigning(unittest.TestCase):
 #    @unittest.skip('disabled')
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
-            # moderation inserting entry with wrong bot signature
-            'https://de.wikipedia.org/w/index.php?title=Wikipedia:L%C3%B6schkandidaten/Urheberrechtsverletzungen&diff=prev&oldid=189873532&diffmode=source')
-        self.checkDoesNotNeedToBeSigned(
             # Portal discussion page abused as archive
             'https://de.wikipedia.org/w/index.php?title=Portal_Diskussion:Hannover/Artikel_des_Monats&diff=prev&oldid=190023146&diffmode=source')
         self.checkDoesNotNeedToBeSigned(
