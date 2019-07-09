@@ -102,6 +102,9 @@ class TestSigning(unittest.TestCase):
 #    @unittest.skip('disabled')
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
+            # insertion of welcome box withouth proper signature but excluded per regex
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Kastriota&oldid=190247918')
+        self.checkDoesNotNeedToBeSigned(
             # Portal discussion page abused as archive
             'https://de.wikipedia.org/w/index.php?title=Portal_Diskussion:Hannover/Artikel_des_Monats&diff=prev&oldid=190023146&diffmode=source')
         self.checkDoesNotNeedToBeSigned(
