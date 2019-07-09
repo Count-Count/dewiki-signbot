@@ -482,7 +482,7 @@ class BotThread(threading.Thread):
                              minor=False,
                              botflag=False)
 
-        if (Controller.logEntries and self.controller.isExperiencedUser(user) and not shouldBeHandledResult.isAlreadyTimeSigned):
+        if (Controller.logEntries and self.controller.isExperiencedUser(user)):
             self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
                           user, self.revInfo.comment, self.revInfo.timestamp, notify)
 
