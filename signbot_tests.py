@@ -140,6 +140,11 @@ class TestSigning(unittest.TestCase):
             'https://de.wikipedia.org/w/index.php?title=Wikipedia:L%C3%B6schkandidaten/5._Juni_2019&diff=prev&oldid=189333235&diffmode=source')
 
 #    @unittest.skip('disabled')
+    def test_needsTimestampOnlySigning(self):
+        self.checkNeedsTimestampOnlySigning(
+            'https://de.wikipedia.org/w/index.php?title=Portal_Diskussion:Fu%C3%9Fball&diff=prev&oldid=190210122&diffmode=source')
+
+#    @unittest.skip('disabled')
     def test_allNeedToBeFullySigned(self):
         text = pywikibot.Page(
             self.controller.site,
