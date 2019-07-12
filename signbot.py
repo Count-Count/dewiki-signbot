@@ -377,8 +377,6 @@ class BotThread(threading.Thread):
 
         if not timeSigned and not userSigned:
             if self.isAlreadySignedInFollowingLines(user, new_lines, tosignnum):
-                self.output(
-                    'Line added to own already signed text')
                 return False, None
 
         if (not timeSigned and not userSigned and
@@ -415,6 +413,7 @@ class BotThread(threading.Thread):
             line = new_lines[lineNo].strip()
             if (self.isUserSigned(user, line) and
                     self.hasAnySignatureTimestamp(line)):
+                self.output('Found user\'s signature in lines after edit')
                 return True
             elif line.startswith('='):
                 # new section found
@@ -423,6 +422,20 @@ class BotThread(threading.Thread):
                 # other signature found
                 return False
         return False
+
+    def continueSigningGetLineIndex(self, user, shouldBeHandledResult, currenttext):
+        if (shouldBeHandledResult.tosignnum < len(currenttext) and
+                currenttext[shouldBeHandledResult.tosignnum] == shouldBeHandledResult.tosignstr):
+            tosignindex = shouldBeHandledResult.tosignnum
+        elif currenttext.count(shouldBeHandledResult.tosignstr) == 1:
+            # line not at same position but just one line with same text found, assuming that it is the line to be signed
+            tosignindex = currenttext.index(shouldBeHandledResult.tosignstr)
+        else:
+            self.output('Line no longer found, probably signed')
+            return -1
+        if self.isAlreadySignedInFollowingLines(user, currenttext, tosignindex):
+            return -1
+        return tosignindex
 
     def run(self):
         try:
@@ -443,18 +456,14 @@ class BotThread(threading.Thread):
         user = pywikibot.User(self.site, self.revInfo.user)
 
         currenttext = self.page.get(force=True).split('\n')
-        if (shouldBeHandledResult.tosignnum < len(currenttext) and
-                currenttext[shouldBeHandledResult.tosignnum] == shouldBeHandledResult.tosignstr):
-            currenttext[shouldBeHandledResult.tosignnum] += self.getSignature(
-                shouldBeHandledResult.tosignstr, user, shouldBeHandledResult.isAlreadyTimeSigned, shouldBeHandledResult.isAlreadyUserSigned)
-            signedLine = currenttext[shouldBeHandledResult.tosignnum]
-        elif currenttext.count(shouldBeHandledResult.tosignstr) == 1:
-            currenttext[currenttext.index(shouldBeHandledResult.tosignstr)] += self.getSignature(shouldBeHandledResult.tosignstr, user,
-                                                                                                 shouldBeHandledResult.isAlreadyTimeSigned, shouldBeHandledResult.isAlreadyUserSigned)
-            signedLine = [currenttext.index(shouldBeHandledResult.tosignstr)]
-        else:
-            self.output('Line no longer found, probably signed')
+        tosignindex = self.continueSigningGetLineIndex(user, shouldBeHandledResult, currenttext)
+        if tosignindex < 0:
             return
+        currenttext[tosignindex] += self.getSignature(
+            shouldBeHandledResult.tosignstr, user, shouldBeHandledResult.isAlreadyTimeSigned, shouldBeHandledResult.isAlreadyUserSigned)
+        signedLine = currenttext[tosignindex]
+
+        self.output('Signing')
 
         summary = "Bot: Signaturnachtrag für Beitrag von %s: \"%s\"" % (
             self.userlink(user), self.revInfo.comment) + self.getTestLink()
