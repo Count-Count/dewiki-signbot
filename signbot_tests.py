@@ -39,19 +39,36 @@ class TestSigning(unittest.TestCase):
         if not page.exists():
             raise Exception("%s - page not found" % title)
         self.assertTrue(page.exists())
-        self.controller.site.loadrevisions(page, startid=revId, total=1)
+        self.controller.site.loadrevisions(
+            page, startid=revId, rvdir=True, total=100)
+
+        found = False
+        cutoffTime = page._revisions[revId].timestamp + \
+            datetime.timedelta(seconds=5*60)
+        lastRevInWindow = revId
+        for id in sorted(page._revisions):
+            if id == revId:
+                found = True
+            elif found:
+                if page._revisions[id].timestamp < cutoffTime:
+                    lastRevInWindow = id
         newRevision = page._revisions[revId]
         epoch = datetime.datetime.utcfromtimestamp(0)
         oldRevId = newRevision.parent_id
-        return RevisionInfo(
+        linesAfterDelay = page.getOldVersion(lastRevInWindow).split('\n')
+        return (linesAfterDelay, RevisionInfo(
             page.namespace(), page.title(), 'new' if oldRevId == 0 else 'edit',
             False, newRevision.comment, newRevision.user, oldRevId, revId,
-            (newRevision.timestamp - epoch).total_seconds())
+            (newRevision.timestamp - epoch).total_seconds()))
 
     def shouldBeHandled(self, pageUrl):
-        rev = self.getRevisionInfo(pageUrl)
+        (linesAfterDelay, rev) = self.getRevisionInfo(pageUrl)
         bt = BotThread(self.controller.site, rev, self.controller)
         (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
+        user = pywikibot.User(self.controller.site, rev.user)
+        if res:
+            if bt.continueSigningGetLineIndex(user, shouldBeHandledResult, linesAfterDelay) < 0:
+                return (False, None)
         return (res, shouldBeHandledResult)
 
     def checkNeedsToBeFullySigned(self, pageUrl):
