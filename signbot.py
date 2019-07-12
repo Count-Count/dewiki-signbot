@@ -376,17 +376,10 @@ class BotThread(threading.Thread):
                 return False, None
 
         if not timeSigned and not userSigned:
-            for lineNo in range(tosignnum, len(new_lines)):
-                line = new_lines[lineNo].strip()
-                if (self.isUserSigned(user, line) and
-                        self.hasAnySignatureTimestamp(line)):
-                    self.output(
-                        'Line added to own already signed text')
-                    return False, None
-                elif line.startswith('='):
-                    break
-                elif self.hasAnySignatureTimestamp(line):
-                    break
+            if self.isAlreadySignedInFollowingLines(user, new_lines, tosignnum):
+                self.output(
+                    'Line added to own already signed text')
+                return False, None
 
         if (not timeSigned and not userSigned and
             self.isPostscriptum(tosignstr) and
@@ -416,6 +409,20 @@ class BotThread(threading.Thread):
 
         # all checks passed
         return True, ShouldBeHandledResult(tosignnum, tosignstr, timeSigned, userSigned)
+
+    def isAlreadySignedInFollowingLines(self, user, new_lines, tosignnum):
+        for lineNo in range(tosignnum + 1, len(new_lines)):
+            line = new_lines[lineNo].strip()
+            if (self.isUserSigned(user, line) and
+                    self.hasAnySignatureTimestamp(line)):
+                return True
+            elif line.startswith('='):
+                # new section found
+                return False
+            elif self.hasAnySignatureTimestamp(line):
+                # other signature found
+                return False
+        return False
 
     def run(self):
         try:
