@@ -348,7 +348,7 @@ class BotThread(threading.Thread):
                         userSigned = self.isUserSigned(user, tosignstr)
                         if timeSigned and userSigned:
                             self.controller.clearnotify(user)
-                            self.output('Signed')
+                            self.output('Already signed')
                             return False, None
 
             if tag == 'delete':
