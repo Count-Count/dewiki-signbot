@@ -48,10 +48,14 @@ class TestSigning(unittest.TestCase):
             False, newRevision.comment, newRevision.user, oldRevId, revId,
             (newRevision.timestamp - epoch).total_seconds())
 
-    def checkNeedsToBeFullySigned(self, pageUrl):
+    def shouldBeHandled(self, pageUrl):
         rev = self.getRevisionInfo(pageUrl)
         bt = BotThread(self.controller.site, rev, self.controller)
         (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
+        return (res, shouldBeHandledResult)
+
+    def checkNeedsToBeFullySigned(self, pageUrl):
+        (res, shouldBeHandledResult) = self.shouldBeHandled(pageUrl)
         self.assertTrue(
             res,
             'Should need full signing but not recognized as unsigned: {}'
@@ -62,9 +66,7 @@ class TestSigning(unittest.TestCase):
                          "Should not be user signed but is: %s" % pageUrl)
 
     def checkNeedsUserOnlySigning(self, pageUrl):
-        rev = self.getRevisionInfo(pageUrl)
-        bt = BotThread(self.controller.site, rev, self.controller)
-        (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
+        (res, shouldBeHandledResult) = self.shouldBeHandled(pageUrl)
         self.assertTrue(
             res,
             'Should need user signing but not recognized as unsigned: {}'
@@ -75,9 +77,7 @@ class TestSigning(unittest.TestCase):
                          "Should not be user signed but is: %s" % pageUrl)
 
     def checkNeedsTimestampOnlySigning(self, pageUrl):
-        rev = self.getRevisionInfo(pageUrl)
-        bt = BotThread(self.controller.site, rev, self.controller)
-        (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
+        (res, shouldBeHandledResult) = self.shouldBeHandled(pageUrl)
         self.assertTrue(
             res,
             'Should need timestamp signing but not recognized as unsigned: {}'
@@ -88,10 +88,9 @@ class TestSigning(unittest.TestCase):
                          "Should not be timestamp signed but is: %s" % pageUrl)
 
     def checkDoesNotNeedToBeSigned(self, pageUrl):
-        rev = self.getRevisionInfo(pageUrl)
-        bt = BotThread(self.controller.site, rev, self.controller)
-        (res, _) = bt.changeShouldBeHandled()
-        self.assertFalse(res)
+        (res, shouldBeHandledResult) = self.shouldBeHandled(pageUrl)
+        self.assertFalse(res,
+                         "Should not need signing by bot but does: %s" % pageUrl)
 
 #    @unittest.skip('disabled')
     def test_needToBeFullySigned(self):
