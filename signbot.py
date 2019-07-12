@@ -188,9 +188,6 @@ class Controller():
     def getKey(self, user):
         return self.hash(self.botkey)+':'+self.hash(self.botkey+':'+user.username)
 
-    def getSetKey(self):
-        return self.hash(self.botkey)+':'+self.hash(self.botkey+':'+self.botkey+':set')
-
     def isExperiencedUser(self, user):
         return not user.isAnonymous() and user.editCount() > 500
 
@@ -204,7 +201,6 @@ class Controller():
         p = self.redis.pipeline()
         p.incr(key)
         p.expireat(key, reset + 10)
-        p.sadd(self.getSetKey(), key)
         limitReached = p.execute()[0] >= 3
         if limitReached:
             p.delete(key)
@@ -216,7 +212,6 @@ class Controller():
             return
         key = self.getKey(user)
         p = self.redis.pipeline()
-        p.srem(self.getSetKey(), key)
         p.delete(key)
         p.execute()
 
