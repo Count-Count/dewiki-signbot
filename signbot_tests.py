@@ -118,6 +118,10 @@ class TestSigning(unittest.TestCase):
 #    @unittest.skip('disabled')
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
+            # signed by other user within delay
+            'https://de.wikipedia.org/w/index.php?title=Diskussion:Costa_Cordalis&diff=prev&oldid=190102321&diffmode=source'
+        )
+        self.checkDoesNotNeedToBeSigned(
             # insertion of welcome box withouth proper signature but excluded per regex
             'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Kastriota&oldid=190247918')
         self.checkDoesNotNeedToBeSigned(
