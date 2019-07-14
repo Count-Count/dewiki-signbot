@@ -491,7 +491,7 @@ class BotThread(threading.Thread):
         self.output('Signing')
 
         summary = "Bot: Signaturnachtrag für Beitrag von %s: \"%s\"" % (
-            self.userlink(user), self.revInfo.comment) + self.getTestLink()
+            self.userlink(user), self.revInfo.comment)
 
 #        if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
         if Controller.doEdits:
@@ -575,9 +575,6 @@ class BotThread(threading.Thread):
             timeInfo,
             altText
         )
-
-    def getTestLink(self):
-        return ' (Testbetrieb)'
 
     @staticmethod
     def getSignatureTimestampString(timestamp):
