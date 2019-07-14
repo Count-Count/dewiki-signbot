@@ -118,6 +118,10 @@ class TestSigning(unittest.TestCase):
 #    @unittest.skip('disabled')
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
+            # User adds text on own discussion page at top
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Matthias_v.d._Elbe&diff=prev&oldid=190432992&diffmode=source'
+        )
+        self.checkDoesNotNeedToBeSigned(
             # {{nobots|unsigned}} global
             'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Count_Count/Sandbox&diff=prev&oldid=190431234&diffmode=source'
         )

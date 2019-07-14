@@ -392,20 +392,23 @@ class BotThread(threading.Thread):
                 self.output('Postcriptum found')
                 return False, None
 
-        if ((new_lines[insertStartLine].strip().startswith('{{')
-             or tosignstr.strip().startswith('{{')) and
-                tosignstr.strip().endswith('}}')):
-            precedingSignatureOrSectionFound = False
-            for i in range(0, insertStartLine):
-                if (new_lines[i].strip().startswith('==')):
-                    precedingSignatureOrSectionFound = True
-                    break
-                if self.hasAnySignature(new_lines[i]):
-                    precedingSignatureOrSectionFound = True
-                    break
-            if not precedingSignatureOrSectionFound:
+        precedingSignatureOrSectionFound = False
+        for i in range(0, insertStartLine):
+            if (new_lines[i].strip().startswith('==')):
+                precedingSignatureOrSectionFound = True
+                break
+            if self.hasAnySignature(new_lines[i]):
+                precedingSignatureOrSectionFound = True
+                break
+        if not precedingSignatureOrSectionFound:
+            if ((new_lines[insertStartLine].strip().startswith('{{')
+                or tosignstr.strip().startswith('{{')) and
+                    tosignstr.strip().endswith('}}')):
                 self.output('Insertion of template at beginning of page')
                 return False, None
+        if self.controller.isExperiencedUser(user) and self.page.title() == 'Benutzer Diskussion:' + user.username:
+            self.output('Insertion by experienced user at the beginning of own user talk page')
+            return False, None
 
         for line in new_lines:
             if re.search(r'{{(?:Vorlage:)?nobots\|unsigned}}', line, re.I):
