@@ -137,7 +137,7 @@ class Controller():
             line = line.strip()
             if line and not line.startswith('#'):
                 lst.append(re.compile(line, re.I))
-
+        lst.append(re.compile(r'{{(?:Vorlage:)?nobots\|unsigned}}', re.I))
         self.excluderegex = lst
 
     def reloadOptOut(self):
@@ -406,6 +406,26 @@ class BotThread(threading.Thread):
             if not precedingSignatureOrSectionFound:
                 self.output('Insertion of template at beginning of page')
                 return False, None
+
+        for line in new_lines:
+            if re.search(r'{{(?:Vorlage:)?nobots\|unsigned}}', line, re.I):
+                self.output('Global {{nobots|unsigned}} found')
+                return False, None
+            elif line.startswith('='):
+                break
+
+        secIndex = 1000
+        if insertStartLine > 1:
+            for i in range(insertStartLine - 2, -1, -1):
+                line = new_lines[i].strip()
+                match = re.match(r'^(=+).*[^=](=+)$', line)
+                if match and len(match.group(1)) == len(match.group(2)) and len(match.group(1)) < secIndex:
+                    lineAfterSectionStart = new_lines[i + 1].strip()
+                    if re.search(r'{{(?:Vorlage:)?nobots\|unsigned}}', lineAfterSectionStart, re.I):
+                        self.output(
+                            '{{nobots|unsigned}} found for section %s' % line)
+                        return False, None
+                    secIndex = len(match.group(1))
 
         # all checks passed
         return True, ShouldBeHandledResult(tosignnum, tosignstr, timeSigned, userSigned)

@@ -118,6 +118,14 @@ class TestSigning(unittest.TestCase):
 #    @unittest.skip('disabled')
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
+            # {{nobots|unsigned}} global
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Count_Count/Sandbox&diff=prev&oldid=190431234&diffmode=source'
+        )
+        self.checkDoesNotNeedToBeSigned(
+            # {{nobots|unsigned}} section
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Count_Count/Sandbox&diff=prev&oldid=190427538&diffmode=source'
+        )
+        self.checkDoesNotNeedToBeSigned(
             # signed by other user within delay
             'https://de.wikipedia.org/w/index.php?title=Diskussion:Costa_Cordalis&diff=prev&oldid=190102321&diffmode=source'
         )
