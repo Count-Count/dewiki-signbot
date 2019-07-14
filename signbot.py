@@ -392,23 +392,32 @@ class BotThread(threading.Thread):
                 self.output('Postcriptum found')
                 return False, None
 
-        precedingSignatureOrSectionFound = False
-        for i in range(0, insertStartLine):
-            if (new_lines[i].strip().startswith('==')):
-                precedingSignatureOrSectionFound = True
-                break
-            if self.hasAnySignature(new_lines[i]):
-                precedingSignatureOrSectionFound = True
-                break
-        if not precedingSignatureOrSectionFound:
-            if ((new_lines[insertStartLine].strip().startswith('{{')
-                or tosignstr.strip().startswith('{{')) and
-                    tosignstr.strip().endswith('}}')):
-                self.output('Insertion of template at beginning of page')
-                return False, None
-        if self.controller.isExperiencedUser(user) and self.page.title() == 'Benutzer Diskussion:' + user.username:
-            self.output('Insertion by experienced user at the beginning of own user talk page')
-            return False, None
+        if not timeSigned:
+            precedingSignatureOrSectionFound = False
+            for i in range(0, insertStartLine):
+                if (new_lines[i].strip().startswith('==')):
+                    precedingSignatureOrSectionFound = True
+                    break
+                if self.hasAnySignature(new_lines[i]):
+                    precedingSignatureOrSectionFound = True
+                    break
+            followingSignatureOrSectionFound = False
+            for i in range(tosignnum + 1, len(new_lines)):
+                if (new_lines[i].strip().startswith('==')):
+                    followingSignatureOrSectionFound = True
+                    break
+                if self.hasAnySignature(new_lines[i]):
+                    followingSignatureOrSectionFound = True
+                    break
+            if not precedingSignatureOrSectionFound:
+                if ((new_lines[insertStartLine].strip().startswith('{{')
+                    or tosignstr.strip().startswith('{{')) and
+                        tosignstr.strip().endswith('}}')):
+                    self.output('Insertion of template at beginning of page')
+                    return False, None
+                if followingSignatureOrSectionFound and self.controller.isExperiencedUser(user):
+                    self.output('Insertion by experienced user at the beginning of talk page before any sections or signatures')
+                    return False, None
 
         for line in new_lines:
             if re.search(r'{{(?:Vorlage:)?nobots\|unsigned}}', line, re.I):

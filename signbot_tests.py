@@ -111,6 +111,9 @@ class TestSigning(unittest.TestCase):
 
 #    @unittest.skip('disabled')
     def test_needToBeFullySigned(self):
+        #        self.checkNeedsToBeFullySigned(
+        #            # ...
+        #            'https://de.wikipedia.org/w/index.php?title=Wikipedia:Administratoren/Notizen&diff=prev&oldid=190236331&diffmode=source')
         self.checkNeedsToBeFullySigned(
             # _ in special directive
             'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion%3AAgathenon&diff=prev&oldid=189352195')
@@ -118,7 +121,11 @@ class TestSigning(unittest.TestCase):
 #    @unittest.skip('disabled')
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
-            # User adds text on own discussion page at top
+            # User adds archive link at the top of talk page
+            'https://de.wikipedia.org/w/index.php?title=Diskussion:Bengaluru&diff=prev&oldid=190437325&diffmode=source'
+        )
+        self.checkDoesNotNeedToBeSigned(
+            # User adds text on own talk page at top
             'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Matthias_v.d._Elbe&diff=prev&oldid=190432992&diffmode=source'
         )
         self.checkDoesNotNeedToBeSigned(
