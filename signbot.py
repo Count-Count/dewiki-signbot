@@ -352,8 +352,10 @@ class BotThread(threading.Thread):
                             return False, None
 
             if tag == 'delete':
+                self.output('Line deletion found')
                 return False, None
             if tag == 'replace':
+                self.output('Line replacement found')
                 return False, None
 
         if tosignstr is False:
