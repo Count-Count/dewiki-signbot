@@ -622,7 +622,7 @@ class BotThread(threading.Thread):
         return False
 
     def hasAnySignature(self, text):
-        return self.hasAnySignatureAllowedUserLink(text) and self.hasAnySignatureAllowedUserLink()
+        return self.hasAnySignatureAllowedUserLink(text) and self.hasAnySignatureTimestamp(text)
 
     def hasAnySignatureAllowedUserLink(self, text):
         for wikilink in pywikibot.link_regex.finditer(text):
