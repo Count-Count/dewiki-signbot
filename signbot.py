@@ -87,11 +87,14 @@ class Controller():
             raise Exception('REDIS_KEY environment variable not set')
         self.redis = Redis(host='tools-redis' if os.name !=
                            'nt' else 'localhost')
+        self.activeWorkerThreads = 0
 
     def run(self):
         if os.name != 'nt':
             signal.signal(signal.SIGALRM, on_timeout)
             signal.alarm(TIMEOUT)
+
+        startCount = 0
 
         rc = site_rc_listener(self.site)
 
@@ -123,9 +126,14 @@ class Controller():
             ):
                 t = BotThread(
                     self.site, RevisionInfo.fromRecentChange(change), self)
+                self.activeWorkerThreads += 1
                 t.start()
+                startCount += 1
+                if startCount % 5 == 0:
+                    pywikibot.output('Active threads: %d' %
+                                     self.activeWorkerThreads)
 
-        pywikibot.log('Main thread exit - THIS SHOULD NOT HAPPEN')
+        pywikibot.output('Main thread exit - THIS SHOULD NOT HAPPEN')
         time.sleep(10)
 
     def reloadRegex(self):
@@ -479,8 +487,11 @@ class BotThread(threading.Thread):
     def run(self):
         try:
             self.run0()
+            self.controller.activeWorkerThreads -= 1
         except Exception as e:
+            self.controller.activeWorkerThreads -= 1
             self.error(traceback.format_exc())
+        
 
     def run0(self):
         res, shouldBeHandledResult = self.changeShouldBeHandled()
