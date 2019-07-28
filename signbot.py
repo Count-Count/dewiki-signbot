@@ -515,8 +515,10 @@ class BotThread(threading.Thread):
 
         self.output('Signing')
 
-        summary = "Bot: Signaturnachtrag für Beitrag von %s: \"%s\"" % (
-            self.userlink(user), self.revInfo.comment)
+        originalSummary = ": \"%s\"" % self.revInfo.comment if len(self.revInfo.comment.strip()) > 0 else ''
+
+        summary = "Bot: Signaturnachtrag für Beitrag von %s%s" % (
+            self.userlink(user), originalSummary)
 
 #        if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
         if Controller.doEdits:
