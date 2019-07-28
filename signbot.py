@@ -429,10 +429,17 @@ class BotThread(threading.Thread):
                     self.output('Insertion by experienced user at the beginning of talk page before any sections or signatures')
                     return False, None
 
+        if self.hasApplicableNobotsTemplate(new_lines, insertStartLine):
+            return False, None
+
+        # all checks passed
+        return True, ShouldBeHandledResult(tosignnum, tosignstr, timeSigned, userSigned)
+
+    def hasApplicableNobotsTemplate(self, new_lines, insertStartLine):
         for line in new_lines:
             if re.search(r'{{(?:Vorlage:)?nobots\|unsigned}}', line, re.I):
                 self.output('Global {{nobots|unsigned}} found')
-                return False, None
+                return True
             elif line.startswith('='):
                 break
 
@@ -446,11 +453,9 @@ class BotThread(threading.Thread):
                     if re.search(r'{{(?:Vorlage:)?nobots\|unsigned}}', lineAfterSectionStart, re.I):
                         self.output(
                             '{{nobots|unsigned}} found for section %s' % line)
-                        return False, None
+                        return True
                     secIndex = len(match.group(1))
-
-        # all checks passed
-        return True, ShouldBeHandledResult(tosignnum, tosignstr, timeSigned, userSigned)
+        return False
 
     def isAlreadySignedInFollowingLines(self, user, new_lines, tosignnum):
         for lineNo in range(tosignnum + 1, len(new_lines)):
@@ -481,6 +486,8 @@ class BotThread(threading.Thread):
             self.output('Line no longer found, probably signed')
             return -1
         if self.isAlreadySignedInFollowingLines(user, currenttext, tosignindex):
+            return -1
+        if self.hasApplicableNobotsTemplate(currenttext,tosignindex):
             return -1
         return tosignindex
 

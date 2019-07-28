@@ -121,6 +121,10 @@ class TestSigning(unittest.TestCase):
 #    @unittest.skip('disabled')
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
+            # User adds nobots template in sleep period
+            'https://de.wikipedia.org/w/index.php?title=Diskussion:Mordfall_Walter_L%C3%BCbcke&diff=prev&oldid=190730837'
+        )
+        self.checkDoesNotNeedToBeSigned(
             # User adds archive link at the top of talk page
             'https://de.wikipedia.org/w/index.php?title=Diskussion:Bengaluru&diff=prev&oldid=190437325&diffmode=source'
         )
