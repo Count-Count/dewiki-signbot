@@ -24,6 +24,7 @@ import base64
 import locale
 import pytz
 import traceback
+import gc
 
 import pywikibot
 from pywikibot.comms.eventstreams import site_rc_listener
@@ -74,6 +75,7 @@ class Controller():
     doEdits = True
 
     def __init__(self):
+        gc.set_debug(gc.DEBUG_STATS)
         self.site = pywikibot.Site(user='CountCountBot')
         self.site.login()  # T153541
         self.reloadRegex()
