@@ -119,7 +119,13 @@ class TestSigning(unittest.TestCase):
             'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion%3AAgathenon&diff=prev&oldid=189352195')
 
 #    @unittest.skip('disabled')
+
     def test_doNotNeedToBeSigned(self):
+        self.checkDoesNotNeedToBeSigned(
+            # nobots|unsigned template for section after empty line
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:PM3&diff=prev&oldid=191418336&diffmode=source'
+        )
+
         self.checkDoesNotNeedToBeSigned(
             # User adds nobots template in sleep period
             'https://de.wikipedia.org/w/index.php?title=Diskussion:Mordfall_Walter_L%C3%BCbcke&diff=prev&oldid=190730837'

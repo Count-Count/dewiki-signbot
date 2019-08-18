@@ -449,7 +449,13 @@ class BotThread(threading.Thread):
                 line = new_lines[i].strip()
                 match = re.match(r'^(=+).*[^=](=+)$', line)
                 if match and len(match.group(1)) == len(match.group(2)) and len(match.group(1)) < secIndex:
-                    lineAfterSectionStart = new_lines[i + 1].strip()
+                    # skip empty lines
+                    checkLineForBotsDirectiveIndex = i + 1
+                    while checkLineForBotsDirectiveIndex < insertStartLine - 1:
+                        if new_lines[checkLineForBotsDirectiveIndex].strip():
+                            break
+                        checkLineForBotsDirectiveIndex += 1
+                    lineAfterSectionStart = new_lines[checkLineForBotsDirectiveIndex].strip()
                     if re.search(r'{{(?:Vorlage:)?nobots\|unsigned}}', lineAfterSectionStart, re.I):
                         self.output(
                             '{{nobots|unsigned}} found for section %s' % line)
