@@ -118,7 +118,12 @@ class TestSigning(unittest.TestCase):
             # _ in special directive
             'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion%3AAgathenon&diff=prev&oldid=189352195')
 
-#    @unittest.skip('disabled')
+    @unittest.skip('disabled')
+    def test_doNotNeedToBeSignedUnimplemented(self):
+        self.checkDoesNotNeedToBeSigned(
+            # Has unclosed link before signature
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Heinz_Schade&diff=prev&oldid=190947403&diffmode=source'
+        )
 
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
