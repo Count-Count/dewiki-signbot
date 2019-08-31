@@ -470,7 +470,7 @@ class BotThread(threading.Thread):
                     self.hasAnySignatureTimestamp(line)):
                 self.output('Found user\'s signature in lines after edit')
                 return True
-            elif self.hasSignedTemplateForUser(user, line):
+            elif self.hasUnsignedTemplateForUser(user, line):
                 self.output('Found signed template for user in lines after edit')
                 return True
             elif line.startswith('='):
@@ -686,7 +686,7 @@ class BotThread(threading.Thread):
         return re.search(r'[0-9]{2}:[0-9]{2}, [123]?[0-9]\. (?:Jan\.|Feb\.|Mär\.|Apr\.|Mai|Jun\.|Jul\.|Aug\.|Sep\.|Okt\.|Nov\.|Dez\.) 2[0-9]{3} \(CES?T\)', line) is not None
 
     @staticmethod
-    def hasSignedTemplateForUser(user, line):
+    def hasUnsignedTemplateForUser(user, line):
         match=re.search(r'{{(?:Vorlage:)?(?:unsigniert|unsigned)\|([^|}]+)', line)
         if match:
             if user.isAnonymous():
