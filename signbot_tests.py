@@ -122,6 +122,14 @@ class TestSigning(unittest.TestCase):
 
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
+            # User adds only [[File:...]] links
+            'https://de.wikipedia.org/w/index.php?title=Wikipedia:Auskunft&diff=prev&oldid=191414058&diffmode=source'
+        )
+        self.checkDoesNotNeedToBeSigned(
+            # User adds only <br /> elements
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Drucker03&diff=prev&oldid=191850129&diffmode=source'
+        )
+        self.checkDoesNotNeedToBeSigned(
             # nobots|unsigned template for section after empty line
             'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:PM3&diff=prev&oldid=191418336&diffmode=source'
         )

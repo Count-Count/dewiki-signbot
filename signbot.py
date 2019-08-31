@@ -698,6 +698,9 @@ class BotThread(threading.Thread):
         # remove non-functional parts and categories
         tempstr = re.sub(r'\[\[[Kk]ategorie:[^\]]+\]\]', '',
                          pywikibot.textlib.removeDisabledParts(line)).strip()
+        tempstr = re.sub(r'<br\s*/>', '', tempstr)
+        tempstr = re.sub(
+            r'\[\[(Datei|File):([^\]\[]|(\[\[[^\]]+\]\]))+\]\]', '', tempstr, 0, re.I)
         # not empty
         if not tempstr:
             return False
