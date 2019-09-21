@@ -12,6 +12,8 @@
 # https://creativecommons.org/licenses/by-sa/3.0/
 
 import datetime
+from datetime import datetime
+from datetime import timedelta
 from urllib.parse import urlparse, parse_qs
 import os
 import re
@@ -95,6 +97,7 @@ class Controller():
             signal.alarm(TIMEOUT)
 
         startCount = 0
+        startTime = datetime.now()
 
         rc = site_rc_listener(self.site)
 
@@ -132,6 +135,9 @@ class Controller():
                 if startCount % 5 == 0:
                     pywikibot.output('Active threads: %d' %
                                      self.activeWorkerThreads)
+            if self.activeWorkerThreads == 0 and datetime.now() - startTime > timedelta(hours=12):
+                pywikibot.output('Restarting...')
+                return
 
         pywikibot.output('Main thread exit - THIS SHOULD NOT HAPPEN')
         time.sleep(10)
