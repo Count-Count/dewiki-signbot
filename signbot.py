@@ -559,8 +559,7 @@ class BotThread(threading.Thread):
 #            if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
             if Controller.doEdits:
                 self.userPut(talk, talk.text, talktext,
-                             comment='Bot: Hinweis zum [[Hilfe:Signatur|Unterschreiben von Diskussionbeiträgen]] ergänzt' + self.getTestLink(
-                             ),
+                             comment='Bot: Hinweis zum [[Hilfe:Signatur|Unterschreiben von Diskussionbeiträgen]] ergänzt',
                              minor=False,
                              botflag=False)
 
