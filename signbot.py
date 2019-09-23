@@ -35,7 +35,7 @@ from pywikibot.diff import PatchManager
 from redis import Redis
 
 
-TIMEOUT = 60  # We expect at least one rc entry every minute
+TIMEOUT = 600  # We expect at least one rc entry every 10 minutes
 
 
 class TimeoutError(Exception):
