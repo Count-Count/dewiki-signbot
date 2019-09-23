@@ -75,7 +75,6 @@ class RevisionInfo():
 
 
 class Controller(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
-
     """The Signbot class."""
 
     logEntries = False
@@ -84,11 +83,9 @@ class Controller(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
     def __init__(self, **kwargs):
         site = pywikibot.Site(user='CountCountBot')
         super(Controller, self).__init__(site=site, **kwargs)
-        self.site.login()  # T153541
         self.reloadRegex()
         self.reloadOptOut()
         self.reloadOptIn()
-        self.useroptin = []  # not implemented
         self.botkey = os.environ.get('REDIS_KEY')
         if not self.botkey or '' == self.botkey.strip():
             raise Exception('REDIS_KEY environment variable not set')
@@ -103,52 +100,49 @@ class Controller(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
             signal.signal(signal.SIGALRM, on_timeout)
             signal.alarm(TIMEOUT)
 
+        self.startCount = 0
+        self.startTime = datetime.now()
+
     def treat(self, page):
         """Process a single Page object from stream."""
         change = page._rcinfo
 
-        startCount = 0
-        startTime = datetime.now()
+        if os.name != 'nt':
+            signal.alarm(TIMEOUT)
 
-        rc = site_rc_listener(self.site)
+        if change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/exclude regex'):
+            pywikibot.output('exclude regex page changed')
+            threading.Thread(target=self.reloadRegex).start()
 
-        for change in rc:
-            if os.name != 'nt':
-                signal.alarm(TIMEOUT)
+        elif change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/Opt-Out'):
+            pywikibot.output('opt-out page changed')
+            threading.Thread(target=self.reloadOptOut).start()
 
-            if change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/exclude regex'):
-                pywikibot.output('exclude regex page changed')
-                threading.Thread(target=self.reloadRegex).start()
+        elif change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/Opt-In'):
+            pywikibot.output('opt-in page changed')
+            threading.Thread(target=self.reloadOptIn).start()
 
-            elif change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/Opt-Out'):
-                pywikibot.output('opt-out page changed')
-                threading.Thread(target=self.reloadOptOut).start()
-
-            elif change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/Opt-In'):
-                pywikibot.output('opt-in page changed')
-                threading.Thread(target=self.reloadOptIn).start()
-
-            # Talk page or project page, bot edits excluded
-            elif (
-                (not change['bot']) and
-                (change['namespace'] == 4
-                    or change['namespace'] % 2 == 1
-                    or change['title'] in self.pageoptin) and
-                (change['type'] in ['edit', 'new']) and
-                ('nosig!' not in change['comment']) and
-                (not change['comment'].startswith('Bot: '))
-            ):
-                t = BotThread(
-                    self.site, RevisionInfo.fromRecentChange(change), self)
-                self.activeWorkerThreads += 1
-                t.start()
-                startCount += 1
-                if startCount % 5 == 0:
-                    pywikibot.output('Active threads: %d' %
-                                     self.activeWorkerThreads)
-            if self.activeWorkerThreads == 0 and datetime.now() - startTime > timedelta(hours=12):
-                pywikibot.output('Restarting...')
-                return
+        # Talk page or project page, bot edits excluded
+        elif (
+            (not change['bot']) and
+            (change['namespace'] == 4
+                or change['namespace'] % 2 == 1
+                or change['title'] in self.pageoptin) and
+            (change['type'] in ['edit', 'new']) and
+            ('nosig!' not in change['comment']) and
+            (not change['comment'].startswith('Bot: '))
+        ):
+            t = BotThread(
+                self.site, RevisionInfo.fromRecentChange(change), self)
+            self.activeWorkerThreads += 1
+            t.start()
+            self.startCount += 1
+            if self.startCount % 5 == 0:
+                pywikibot.output('Active threads: %d' %
+                                 self.activeWorkerThreads)
+        if self.activeWorkerThreads == 0 and datetime.now() - self.startTime > timedelta(hours=12):
+            pywikibot.output('Restarting...')
+            self.quit()
 
     def teardown(self):
         """Bot has finished due to unknown reason."""
@@ -441,12 +435,13 @@ class BotThread(threading.Thread):
                     break
             if not precedingSignatureOrSectionFound:
                 if ((new_lines[insertStartLine].strip().startswith('{{')
-                    or tosignstr.strip().startswith('{{')) and
+                     or tosignstr.strip().startswith('{{')) and
                         tosignstr.strip().endswith('}}')):
                     self.output('Insertion of template at beginning of page')
                     return False, None
                 if followingSignatureOrSectionFound and self.controller.isExperiencedUser(user):
-                    self.output('Insertion by experienced user at the beginning of talk page before any sections or signatures')
+                    self.output(
+                        'Insertion by experienced user at the beginning of talk page before any sections or signatures')
                     return False, None
 
         if self.hasApplicableNobotsTemplate(new_lines, insertStartLine):
@@ -475,7 +470,8 @@ class BotThread(threading.Thread):
                         if new_lines[checkLineForBotsDirectiveIndex].strip():
                             break
                         checkLineForBotsDirectiveIndex += 1
-                    lineAfterSectionStart = new_lines[checkLineForBotsDirectiveIndex].strip()
+                    lineAfterSectionStart = new_lines[checkLineForBotsDirectiveIndex].strip(
+                    )
                     if re.search(r'{{(?:Vorlage:)?nobots\|unsigned}}', lineAfterSectionStart, re.I):
                         self.output(
                             '{{nobots|unsigned}} found for section %s' % line)
@@ -491,7 +487,8 @@ class BotThread(threading.Thread):
                 self.output('Found user\'s signature in lines after edit')
                 return True
             elif self.hasUnsignedTemplateForUser(user, line):
-                self.output('Found signed template for user in lines after edit')
+                self.output(
+                    'Found signed template for user in lines after edit')
                 return True
             elif line.startswith('='):
                 # new section found
@@ -513,7 +510,7 @@ class BotThread(threading.Thread):
             return -1
         if self.isAlreadySignedInFollowingLines(user, currenttext, tosignindex):
             return -1
-        if self.hasApplicableNobotsTemplate(currenttext,tosignindex):
+        if self.hasApplicableNobotsTemplate(currenttext, tosignindex):
             return -1
         return tosignindex
 
@@ -524,7 +521,6 @@ class BotThread(threading.Thread):
         except Exception as e:
             self.controller.activeWorkerThreads -= 1
             self.error(traceback.format_exc())
-        
 
     def run0(self):
         res, shouldBeHandledResult = self.changeShouldBeHandled()
@@ -539,7 +535,8 @@ class BotThread(threading.Thread):
         user = pywikibot.User(self.site, self.revInfo.user)
 
         currenttext = self.page.get(force=True).split('\n')
-        tosignindex = self.continueSigningGetLineIndex(user, shouldBeHandledResult, currenttext)
+        tosignindex = self.continueSigningGetLineIndex(
+            user, shouldBeHandledResult, currenttext)
         if tosignindex < 0:
             return
         currenttext[tosignindex] += self.getSignature(
@@ -548,7 +545,8 @@ class BotThread(threading.Thread):
 
         self.output('Signing')
 
-        originalSummary = ": \"%s\"" % self.revInfo.comment if len(self.revInfo.comment.strip()) > 0 else ''
+        originalSummary = ": \"%s\"" % self.revInfo.comment if len(
+            self.revInfo.comment.strip()) > 0 else ''
 
         summary = "Bot: Signaturnachtrag für Beitrag von %s%s" % (
             self.userlink(user), originalSummary)
@@ -706,7 +704,8 @@ class BotThread(threading.Thread):
 
     @staticmethod
     def hasUnsignedTemplateForUser(user, line):
-        match=re.search(r'{{(?:Vorlage:)?(?:unsigniert|unsigned)\|([^|}]+)', line)
+        match = re.search(
+            r'{{(?:Vorlage:)?(?:unsigniert|unsigned)\|([^|}]+)', line)
         if match:
             if user.isAnonymous():
                 return match.group(1).strip().lower() == user.username.lower()
@@ -744,9 +743,6 @@ class BotThread(threading.Thread):
         return True
 
     def isUserOptOut(self, user):
-        # Check for opt-in {{YesAutosign}} -> False
-        if user in self.controller.useroptin:
-            return False
         # Check for opt-out {{NoAutosign}} -> True
         if user in self.controller.useroptout:
             return True
