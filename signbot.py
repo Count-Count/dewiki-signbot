@@ -29,8 +29,10 @@ import traceback
 import gc
 
 import pywikibot
+from pywikibot.bot import SingleSiteBot, ExistingPageBot, NoRedirectPageBot
 from pywikibot.comms.eventstreams import site_rc_listener
 from pywikibot.diff import PatchManager
+from pywikibot.pagegenerators import LiveRCPageGenerator
 
 from redis import Redis
 
@@ -72,13 +74,16 @@ class RevisionInfo():
         self.timestamp = timestamp
 
 
-class Controller():
+class Controller(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
+
+    """The Signbot class."""
+
     logEntries = False
     doEdits = True
 
-    def __init__(self):
-#        gc.set_debug(gc.DEBUG_STATS)
-        self.site = pywikibot.Site(user='CountCountBot')
+    def __init__(self, **kwargs):
+        site = pywikibot.Site(user='CountCountBot')
+        super(Controller, self).__init__(site=site, **kwargs)
         self.site.login()  # T153541
         self.reloadRegex()
         self.reloadOptOut()
@@ -87,14 +92,20 @@ class Controller():
         self.botkey = os.environ.get('REDIS_KEY')
         if not self.botkey or '' == self.botkey.strip():
             raise Exception('REDIS_KEY environment variable not set')
-        self.redis = Redis(host='tools-redis' if os.name !=
-                           'nt' else 'localhost')
+        self.redis = Redis(host='tools-redis'
+                           if os.name != 'nt' else 'localhost')
+        self.generator = LiveRCPageGenerator(self.site)
         self.activeWorkerThreads = 0
 
-    def run(self):
+    def setup(self):
+        """Setup the bot."""
         if os.name != 'nt':
             signal.signal(signal.SIGALRM, on_timeout)
             signal.alarm(TIMEOUT)
+
+    def treat(self, page):
+        """Process a single Page object from stream."""
+        change = page._rcinfo
 
         startCount = 0
         startTime = datetime.now()
@@ -109,16 +120,16 @@ class Controller():
                 pywikibot.output('exclude regex page changed')
                 threading.Thread(target=self.reloadRegex).start()
 
-            if change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/Opt-Out'):
+            elif change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/Opt-Out'):
                 pywikibot.output('opt-out page changed')
                 threading.Thread(target=self.reloadOptOut).start()
 
-            if change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/Opt-In'):
+            elif change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/Opt-In'):
                 pywikibot.output('opt-in page changed')
                 threading.Thread(target=self.reloadOptIn).start()
 
             # Talk page or project page, bot edits excluded
-            if (
+            elif (
                 (not change['bot']) and
                 (change['namespace'] == 4
                     or change['namespace'] % 2 == 1
@@ -139,8 +150,11 @@ class Controller():
                 pywikibot.output('Restarting...')
                 return
 
-        pywikibot.output('Main thread exit - THIS SHOULD NOT HAPPEN')
-        time.sleep(10)
+    def teardown(self):
+        """Bot has finished due to unknown reason."""
+        if self._generator_completed:
+            pywikibot.log('Main thread exit - THIS SHOULD NOT HAPPEN')
+            time.sleep(10)
 
     def reloadRegex(self):
         pywikibot.output('Reloading exclude regex')
