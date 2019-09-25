@@ -103,6 +103,15 @@ class Controller(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
         self.startCount = 0
         self.startTime = datetime.now()
 
+    def skip_page(self, page):
+        """Skip special/media pages"""
+        if page.namespace().id < 0:
+            pywikibot.warning(
+                'Page {page} is a special or media page.'
+                .format(page=page))
+            return True
+        return super().skip_page(page)
+
     def treat(self, page):
         """Process a single Page object from stream."""
         change = page._rcinfo
