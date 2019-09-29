@@ -423,11 +423,11 @@ class BotThread(threading.Thread):
                         exactTimeSigned = tosignstr.find(
                             timestamp1) >= 0 or tosignstr.find(timestamp2) >= 0
 
-                        timeSigned = self.hasAnySignatureTimestamp(line)
+                        timeSigned = timeSigned or self.hasAnySignatureTimestamp(line)
                         if timeSigned:
                             signatureTimestampCount += 1
 
-                        userSigned = self.isUserSigned(user, tosignstr)
+                        userSigned = userSigned or self.isUserSigned(user, tosignstr)
                         if timeSigned and userSigned:
                             self.controller.clearnotify(user)
                             self.output('Already signed')
