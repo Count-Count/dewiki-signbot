@@ -130,6 +130,10 @@ class TestSigning(unittest.TestCase):
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
             # Experienced user adds text on own talk page
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Horst_Gr%C3%A4bner&diff=prev&oldid=192065860&diffmode=source'
+        )
+        self.checkDoesNotNeedToBeSigned(
+            # Experienced user adds text on own talk page
             'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Wahrerwattwurm&diff=prev&oldid=192668716&diffmode=source'
         )
         self.checkDoesNotNeedToBeSigned(
