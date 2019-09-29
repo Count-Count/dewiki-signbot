@@ -36,6 +36,46 @@ from pywikibot.pagegenerators import LiveRCPageGenerator
 
 from redis import Redis
 
+# https://gerrit.wikimedia.org/r/#/c/pywikibot/core/+/525179/
+def monkey_patch(site):
+    from pywikibot.site import PageInUse
+
+    def lock_page(self, page, block=True):
+        """
+        Lock page for writing. Must be called before writing any page.
+        We don't want different threads trying to write to the same page
+        at the same time, even to different sections.
+        @param page: the page to be locked
+        @type page: pywikibot.Page
+        @param block: if true, wait until the page is available to be locked;
+            otherwise, raise an exception if page can't be locked
+        """
+        title = page.title(with_section=False)
+
+        self._pagemutex.acquire()
+        try:
+            while title in self._locked_pages:
+                if not block:
+                    raise PageInUse(title)
+
+                # The mutex must be released so that page can be unlocked
+                self._pagemutex.release()
+                time.sleep(.25)
+                self._pagemutex.acquire()
+
+            self._locked_pages.append(title)
+        finally:
+            # time.sleep may raise an exception from signal handler (eg:
+            # KeyboardInterrupt) while the lock is released, and there is no
+            # reason to acquire the lock again given that our caller will
+            # receive the exception. The state of the lock is therefore
+            # undefined at the point of this finally block.
+            try:
+                self._pagemutex.release()
+            except RuntimeError:
+                pass
+
+    site.__class__.lock_page = lock_page
 
 TIMEOUT = 600  # We expect at least one rc entry every 10 minutes
 
@@ -82,6 +122,7 @@ class Controller(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
 
     def __init__(self, **kwargs):
         site = pywikibot.Site(user='CountCountBot')
+        monkey_patch(site)
         super(Controller, self).__init__(site=site, **kwargs)
         self.reloadRegex()
         self.reloadOptOut()
