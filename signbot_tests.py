@@ -129,6 +129,10 @@ class TestSigning(unittest.TestCase):
 
     def test_doNotNeedToBeSigned(self):
         self.checkDoesNotNeedToBeSigned(
+            # Experienced user adds text on own talk page
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Wahrerwattwurm&diff=prev&oldid=192668716&diffmode=source'
+        )
+        self.checkDoesNotNeedToBeSigned(
             # User adds only [[File:...]] links
             'https://de.wikipedia.org/w/index.php?title=Wikipedia:Auskunft&diff=prev&oldid=191414058&diffmode=source'
         )

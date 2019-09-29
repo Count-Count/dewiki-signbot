@@ -349,6 +349,12 @@ class BotThread(threading.Thread):
             self.output('%s opted-out' % user.username)
             return False, None
 
+        if (self.page.namespace() == pywikibot.site.Namespace.USER_TALK 
+                and self.page.title(with_ns=False) == user.username
+                and self.controller.isExperiencedUser(user)):
+            self.output('Experienced user %s edited own talk page' % user.username)
+            return False, None
+
         # diff-reading.
         if self.revInfo.type == 'new':
             old_text = ''
