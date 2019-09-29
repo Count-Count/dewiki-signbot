@@ -758,7 +758,7 @@ class BotThread(threading.Thread):
 
     @staticmethod
     def hasAnySignatureTimestamp(line):
-        return re.search(r'[0-9]{2}:[0-9]{2}, [123]?[0-9]\. (?:Jan\.|Feb\.|Mär\.|Apr\.|Mai|Jun\.|Jul\.|Aug\.|Sep\.|Okt\.|Nov\.|Dez\.) 2[0-9]{3} \(CES?T\)', line) is not None
+        return re.search(r'[0-9]{2}:[0-9]{2}, [123]?[0-9]\. (?:Jan\.|Feb\.|Mär\.|Apr\.|Mai|Jun\.|Jul\.|Aug\.|Sep\.|Okt\.|Nov\.|Dez\.) 2[0-9]{3} \((CES?T|MES?Z)\)', line) is not None
 
     @staticmethod
     def hasUnsignedTemplateForUser(user, line):
