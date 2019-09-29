@@ -25,6 +25,8 @@ class TestSigning(unittest.TestCase):
         locale.setlocale(locale.LC_ALL, 'de_DE.utf8')
         super(TestSigning, self).setUp()
         self.controller = Controller()
+        Controller.doEdits = False
+        Controller.doNotify = False
 
     def tearDown(self):
         pywikibot.stopme()

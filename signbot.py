@@ -119,6 +119,7 @@ class Controller(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
 
     logEntries = False
     doEdits = True
+    doNotify = True
 
     def __init__(self, **kwargs):
         site = pywikibot.Site(user='CountCountBot')
@@ -263,6 +264,8 @@ class Controller(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
         return not user.isAnonymous() and user.editCount() > 500
 
     def checknotify(self, user):
+        if not Controller.doNotify:
+            return False
         if user.isAnonymous():
             return False
         if self.isExperiencedUser(user):
@@ -279,6 +282,8 @@ class Controller(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
             return True
 
     def clearnotify(self, user):
+        if not Controller.doNotify:
+            return False
         if user.isAnonymous():
             return
         key = self.getKey(user)
