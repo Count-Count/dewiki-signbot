@@ -190,13 +190,6 @@ class Controller(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
             if self.startCount % 5 == 0:
                 pywikibot.output('Active threads: %d' %
                                  self.activeWorkerThreads)
-        if self.activeWorkerThreads == 0 and datetime.now() - self.startTime > timedelta(hours=12):
-            pywikibot.output('Restarting...')
-            self.quit()
-
-        if datetime.now() - self.startTime > timedelta(hours=24):
-            pywikibot.output('FORCE restarting despite active threads...')
-            self.quit()
 
     def teardown(self):
         """Bot has finished due to unknown reason."""
