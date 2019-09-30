@@ -117,6 +117,10 @@ class TestSigning(unittest.TestCase):
         #            # ...
         #            'https://de.wikipedia.org/w/index.php?title=Wikipedia:Administratoren/Notizen&diff=prev&oldid=190236331&diffmode=source')
         self.checkNeedsToBeFullySigned(
+            # normal ip edit
+            'https://de.wikipedia.org/w/index.php?title=Wikipedia:Administratoren/Anfragen&diff=prev&oldid=192729175&diffmode=source'
+        )
+        self.checkNeedsToBeFullySigned(
             # _ in special directive
             'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion%3AAgathenon&diff=prev&oldid=189352195')
 
