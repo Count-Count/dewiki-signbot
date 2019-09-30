@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "signbot",
             "type": "python",
             "request": "launch",
@@ -13,6 +20,14 @@
             "args": [
                 "-simulate"
             ]
+        },
+        {
+            "name": "signbot prod",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/signbot.py",
+            "console": "integratedTerminal",
+            "args": []
         }
     ]
 }
