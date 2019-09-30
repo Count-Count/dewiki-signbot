@@ -27,7 +27,7 @@ import locale
 import pytz
 import traceback
 import gc
-
+import sched
 import pywikibot
 from pywikibot.bot import SingleSiteBot
 from pywikibot.comms.eventstreams import site_rc_listener
@@ -134,7 +134,20 @@ class Controller(SingleSiteBot):
         self.redis = Redis(host='tools-redis'
                            if os.name != 'nt' else 'localhost')
         self.generator = LiveRCPageGenerator(self.site)
-        self.activeWorkerThreads = 0
+        self.scheduler = sched.scheduler(time.time, time.sleep)
+        self.lastQueueIdleTime = datetime.now()
+        threading.Thread(target=self.processQueue).start()
+
+    def processQueue(self):
+        while True:
+            try:
+                self.lastQueueIdleTime = datetime.now()
+                res = self.scheduler.run(blocking = False)
+                if res:
+                    time.sleep(1)
+            except Exception as e:
+                pywikibot.error('Error during processing queue: %s ' % traceback.format_exc())
+                time.sleep(10)
 
     def setup(self):
         """Setup the bot."""
@@ -184,14 +197,16 @@ class Controller(SingleSiteBot):
             ('nosig!' not in change['comment']) and
             (not change['comment'].startswith('Bot: '))
         ):
-            t = BotThread(
+            t = EditItem(
                 self.site, RevisionInfo.fromRecentChange(change), self)
-            self.activeWorkerThreads += 1
-            t.start()
+            self.scheduler.enter(0, 1, t.run)
             self.startCount += 1
             if self.startCount % 5 == 0:
-                pywikibot.output('Active threads: %d' %
-                                 self.activeWorkerThreads)
+                pywikibot.output('Queue depth: %d' % len(self.scheduler.queue))
+            if datetime.now() - self.lastQueueIdleTime > timedelta(minutes=1):
+                pywikibot.error('Queue idle longer than one minute ago: %s' % str(
+                    datetime.now - self.lastQueueIdleTime))
+
 
     def teardown(self):
         """Bot has finished due to unknown reason."""
@@ -301,7 +316,7 @@ class ShouldBeHandledResult:
         self.isAlreadyUserSigned = isAlreadyUserSigned
 
 
-class BotThread(threading.Thread):
+class EditItem:
     timezone = pytz.timezone('Europe/Berlin')
 
     def __init__(self, site, revInfo, controller):
@@ -576,9 +591,7 @@ class BotThread(threading.Thread):
     def run(self):
         try:
             self.run0()
-            self.controller.activeWorkerThreads -= 1
         except Exception as e:
-            self.controller.activeWorkerThreads -= 1
             self.error(traceback.format_exc())
 
     def run0(self):
@@ -588,11 +601,16 @@ class BotThread(threading.Thread):
 
         self.output('Waiting')
         if Controller.doEdits:
-            time.sleep(5 * 60)
-        self.output('Woke up')
-        self.continueAferDelay()
+            self.controller.scheduler.enter(5*60, 1, self.continueAferDelay)
     
     def continueAferDelay(self):
+        try:
+            self.continueAferDelay0()
+        except Exception as e:
+            self.error(traceback.format_exc())
+
+    def continueAferDelay0(self):
+        self.output('Woke up')
         while True:
             try:
                 user = pywikibot.User(self.site, self.revInfo.user)
@@ -702,7 +720,7 @@ class BotThread(threading.Thread):
     @staticmethod
     def getSignatureTimestampString(timestamp):
         time = pytz.utc.localize(pywikibot.Timestamp.utcfromtimestamp(timestamp)) \
-            .astimezone(BotThread.timezone)
+            .astimezone(EditItem.timezone)
         abbrevDot = '' if time.month == 5 else '.'  # no abbrev dot for Mai
         if os.name == 'nt':
             return (time.strftime('%H:%M, ')+time.strftime('%e').replace(' ', '')+time.strftime('. %b'+abbrevDot+' %Y (%Z)')).replace('Mrz', 'Mär')
