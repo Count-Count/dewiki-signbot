@@ -581,7 +581,7 @@ class BotThread(threading.Thread):
             self.error(traceback.format_exc())
 
     def run0(self):
-        res, shouldBeHandledResult = self.changeShouldBeHandled()
+        res, self.shouldBeHandledResult = self.changeShouldBeHandled()
         if not res:
             return
 
@@ -589,17 +589,19 @@ class BotThread(threading.Thread):
         if Controller.doEdits:
             time.sleep(5 * 60)
         self.output('Woke up')
-
+        self.continueAferDelay()
+    
+    def continueAferDelay(self):
         while True:
             try:
                 user = pywikibot.User(self.site, self.revInfo.user)
                 currenttext = self.page.get(force=True).split('\n')
                 tosignindex = self.continueSigningGetLineIndex(
-                    user, shouldBeHandledResult, currenttext)
+                    user, self.shouldBeHandledResult, currenttext)
                 if tosignindex < 0:
                     return
                 currenttext[tosignindex] += self.getSignature(
-                    shouldBeHandledResult.tosignstr, user, shouldBeHandledResult.isAlreadyTimeSigned, shouldBeHandledResult.isAlreadyUserSigned)
+                    self.shouldBeHandledResult.tosignstr, user, self.shouldBeHandledResult.isAlreadyTimeSigned, self.shouldBeHandledResult.isAlreadyUserSigned)
                 signedLine = currenttext[tosignindex]
 
                 self.output('Signing')
