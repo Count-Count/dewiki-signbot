@@ -200,7 +200,7 @@ class Controller(SingleSiteBot):
                 self.site, RevisionInfo.fromRecentChange(change), self)
             self.scheduler.enter(0, 1, t.run)
             self.startCount += 1
-            if self.startCount % 5 == 0:
+            if len(self.scheduler.queue) > 2:
                 pywikibot.output('Queue depth: %d' % len(self.scheduler.queue))
             if datetime.now() - self.lastQueueIdleTime > timedelta(minutes=1):
                 pywikibot.error('Queue idle longer than one minute ago: %s' % str(
