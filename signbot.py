@@ -142,9 +142,8 @@ class Controller(SingleSiteBot):
         while True:
             try:
                 self.lastQueueIdleTime = datetime.now()
-                res = self.scheduler.run(blocking = False)
-                if res:
-                    time.sleep(1)
+                self.scheduler.run(blocking = False)
+                time.sleep(1)
             except Exception as e:
                 pywikibot.error('Error during processing queue: %s ' % traceback.format_exc())
                 time.sleep(10)
