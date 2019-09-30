@@ -858,11 +858,6 @@ class BotThread(threading.Thread):
             pywikibot.output('No changes were needed on %s'
                              % page.title(asLink=True))
             return
-#        elif self.controller.total <= 0:
-#            raise RuntimeError('Maxium edits reached!')
-        else:
-            # self.controller.total -= 1
-            pass
 
         pywikibot.output('\n\n>>> \03{lightpurple}%s\03{default} <<<'
                          % page.title(asLink=True))
@@ -878,7 +873,6 @@ class BotThread(threading.Thread):
         except pywikibot.Error as e:
             pywikibot.output('Failed to save %s: %r: %s' % (
                 page.title(asLink=True), e, e))
-            self.controller.total += 1
 
 
 def main():
