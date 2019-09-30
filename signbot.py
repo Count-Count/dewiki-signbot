@@ -154,9 +154,6 @@ class Controller(SingleSiteBot):
             signal.signal(signal.SIGALRM, on_timeout)
             signal.alarm(TIMEOUT)
 
-        self.startCount = 0
-        self.startTime = datetime.now()
-
     def skip_page(self, page):
         """Skip special/media pages"""
         if page.namespace().id < 0:
@@ -199,9 +196,6 @@ class Controller(SingleSiteBot):
             t = EditItem(
                 self.site, RevisionInfo.fromRecentChange(change), self)
             self.scheduler.enter(0, 1, t.run)
-            self.startCount += 1
-            if len(self.scheduler.queue) > 2:
-                pywikibot.output('Queue depth: %d' % len(self.scheduler.queue))
             if datetime.now() - self.lastQueueIdleTime > timedelta(minutes=1):
                 pywikibot.error('Queue idle longer than one minute ago: %s' % str(
                     datetime.now - self.lastQueueIdleTime))
