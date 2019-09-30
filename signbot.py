@@ -29,7 +29,7 @@ import traceback
 import gc
 
 import pywikibot
-from pywikibot.bot import SingleSiteBot, ExistingPageBot, NoRedirectPageBot
+from pywikibot.bot import SingleSiteBot
 from pywikibot.comms.eventstreams import site_rc_listener
 from pywikibot.diff import PatchManager
 from pywikibot.pagegenerators import LiveRCPageGenerator
@@ -114,7 +114,7 @@ class RevisionInfo():
         self.timestamp = timestamp
 
 
-class Controller(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
+class Controller(SingleSiteBot):
     """The Signbot class."""
 
     logEntries = False
@@ -148,9 +148,10 @@ class Controller(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
     def skip_page(self, page):
         """Skip special/media pages"""
         if page.namespace().id < 0:
-            pywikibot.warning(
-                'Page {page} is a special or media page.'
-                .format(page=page))
+            return True
+        elif not page.exists():
+            return True
+        elif page.isRedirectPage():
             return True
         return super().skip_page(page)
 
