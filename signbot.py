@@ -590,29 +590,34 @@ class BotThread(threading.Thread):
             time.sleep(5 * 60)
         self.output('Woke up')
 
-        user = pywikibot.User(self.site, self.revInfo.user)
+        while True:
+            try:
+                user = pywikibot.User(self.site, self.revInfo.user)
+                currenttext = self.page.get(force=True).split('\n')
+                tosignindex = self.continueSigningGetLineIndex(
+                    user, shouldBeHandledResult, currenttext)
+                if tosignindex < 0:
+                    return
+                currenttext[tosignindex] += self.getSignature(
+                    shouldBeHandledResult.tosignstr, user, shouldBeHandledResult.isAlreadyTimeSigned, shouldBeHandledResult.isAlreadyUserSigned)
+                signedLine = currenttext[tosignindex]
 
-        currenttext = self.page.get(force=True).split('\n')
-        tosignindex = self.continueSigningGetLineIndex(
-            user, shouldBeHandledResult, currenttext)
-        if tosignindex < 0:
-            return
-        currenttext[tosignindex] += self.getSignature(
-            shouldBeHandledResult.tosignstr, user, shouldBeHandledResult.isAlreadyTimeSigned, shouldBeHandledResult.isAlreadyUserSigned)
-        signedLine = currenttext[tosignindex]
+                self.output('Signing')
 
-        self.output('Signing')
+                originalSummary = ": \"%s\"" % self.revInfo.comment if len(
+                    self.revInfo.comment.strip()) > 0 else ''
 
-        originalSummary = ": \"%s\"" % self.revInfo.comment if len(
-            self.revInfo.comment.strip()) > 0 else ''
+                summary = "Bot: Signaturnachtrag für Beitrag von %s%s" % (
+                    self.userlink(user), originalSummary)
 
-        summary = "Bot: Signaturnachtrag für Beitrag von %s%s" % (
-            self.userlink(user), originalSummary)
-
-#        if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
-        if Controller.doEdits:
-            self.userPut(self.page, self.page.get(),
-                         '\n'.join(currenttext), comment=summary, botflag=False)
+#                if self.page.title().startswith('Benutzer Diskussion:Count Count/'):
+                if Controller.doEdits:
+                    self.userPut(self.page, self.page.get(),
+                                    '\n'.join(currenttext), comment=summary, botflag=False)
+                break
+            except pywikibot.EditConflict:
+                self.output('Edit conflict - retrying...')
+                continue
 
         notify = self.controller.checknotify(user)
         if notify:
@@ -869,7 +874,8 @@ class BotThread(threading.Thread):
         page.text = newtext
         try:
             page.save(**kwargs)
-            pass
+        except pywikibot.EditConflict:
+            raise
         except pywikibot.Error as e:
             pywikibot.output('Failed to save %s: %r: %s' % (
                 page.title(asLink=True), e, e))
