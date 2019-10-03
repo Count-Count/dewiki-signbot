@@ -198,7 +198,7 @@ class Controller(SingleSiteBot):
             self.scheduler.enter(0, 1, t.run)
             if datetime.now() - self.lastQueueIdleTime > timedelta(minutes=1):
                 pywikibot.error('Queue idle longer than one minute ago: %s' % str(
-                    datetime.now - self.lastQueueIdleTime))
+                    datetime.now() - self.lastQueueIdleTime))
 
 
     def teardown(self):
