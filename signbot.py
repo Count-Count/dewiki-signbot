@@ -632,6 +632,9 @@ class EditItem:
             except pywikibot.EditConflict:
                 self.output('Edit conflict - retrying...')
                 continue
+            except pywikibot.NoPage:
+                self.output('Page ceased to exist.')
+                return
 
         notify = self.controller.checknotify(user)
         if notify:
