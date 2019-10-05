@@ -32,7 +32,6 @@ import pywikibot
 from pywikibot.bot import SingleSiteBot
 from pywikibot.comms.eventstreams import site_rc_listener
 from pywikibot.diff import PatchManager
-from pywikibot.pagegenerators import LiveRCPageGenerator
 
 from redis import Redis
 
@@ -133,7 +132,7 @@ class Controller(SingleSiteBot):
             raise Exception('REDIS_KEY environment variable not set')
         self.redis = Redis(host='tools-redis'
                            if os.name != 'nt' else 'localhost')
-        self.generator = LiveRCPageGenerator(self.site)
+        self.generator = FaultTolerantLiveRCPageGenerator(self.site)
         self.scheduler = sched.scheduler(time.time, time.sleep)
         self.lastQueueIdleTime = datetime.now()
         threading.Thread(target=self.processQueue).start()
@@ -897,6 +896,20 @@ class EditItem:
             pywikibot.output('Failed to save %s: %r: %s' % (
                 page.title(asLink=True), e, e))
 
+def FaultTolerantLiveRCPageGenerator(site):
+    from pywikibot.comms.eventstreams import site_rc_listener
+
+    for entry in site_rc_listener(site):
+        # The title in a log entry may have been suppressed
+        if 'title' not in entry and entry['type'] == 'log':
+            continue
+        try:
+            page = pywikibot.Page(site, entry['title'], entry['namespace'])
+        except:
+            pywikibot.warning('Exception instantiating page %s: %s' % (entry['title'], traceback.format_exc()))
+            continue
+        page._rcinfo = entry
+        yield page
 
 def main():
     locale.setlocale(locale.LC_ALL, 'de_DE.utf8')
