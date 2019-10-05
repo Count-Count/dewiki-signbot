@@ -194,11 +194,10 @@ class Controller(SingleSiteBot):
         ):
             t = EditItem(
                 self.site, RevisionInfo.fromRecentChange(change), self)
-            self.scheduler.enter(0, 1, t.run)
+            self.scheduler.enter(0, 1, t.checkEdit)
             if datetime.now() - self.lastQueueIdleTime > timedelta(minutes=1):
                 pywikibot.error('Queue idle longer than one minute ago: %s, queue depth: %d' % (str(
                     datetime.now() - self.lastQueueIdleTime), len(self.scheduler.queue)))
-
 
     def teardown(self):
         """Bot has finished due to unknown reason."""
@@ -580,13 +579,19 @@ class EditItem:
             return -1
         return tosignindex
 
-    def run(self):
+    def runWrapped(self, func):
         try:
-            self.run0()
+            startTime = datetime.now()
+            func()
+            if datetime.now() - startTime > timedelta(seconds=10):
+                self.warning("Execution elapsed %s" % (str(datetime.now() - startTime)))
         except Exception as e:
             self.error(traceback.format_exc())
 
-    def run0(self):
+    def checkEdit(self):
+        self.runWrapped(self.checkEdit0)
+
+    def checkEdit0(self):
         res, self.shouldBeHandledResult = self.changeShouldBeHandled()
         if not res:
             return
@@ -596,10 +601,7 @@ class EditItem:
             self.controller.scheduler.enter(5*60, 1, self.continueAferDelay)
     
     def continueAferDelay(self):
-        try:
-            self.continueAferDelay0()
-        except Exception as e:
-            self.error(traceback.format_exc())
+        self.runWrapped(self.continueAferDelay0)
 
     def continueAferDelay0(self):
         self.output('Woke up')
@@ -666,6 +668,9 @@ class EditItem:
 
     def error(self, info):
         pywikibot.error('%s: %s' % (self.page, info))
+
+    def warning(self, info):
+        pywikibot.warning('%s: %s' % (self.page, info))
 
     def getTags(self):
         req = self.site._simple_request(
