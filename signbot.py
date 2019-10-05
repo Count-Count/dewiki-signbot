@@ -656,10 +656,6 @@ class EditItem:
                              minor=False,
                              botflag=False)
 
-        if (Controller.logEntries and self.controller.isExperiencedUser(user) and not shouldBeHandledResult.isAlreadyUserSigned):
-            self.writeLog(self.page, signedLine, summary, self.revInfo.newRevision,
-                          user, self.revInfo.comment, self.revInfo.timestamp, notify)
-
     def isPostscriptum(self, line):
         return re.match(r'^(:+\s*)?(PS|P\. ?S\.|Nachtrag|Postscriptum)\s*\S', line, re.I) is not None
 
