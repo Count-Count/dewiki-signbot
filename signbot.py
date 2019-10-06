@@ -878,11 +878,11 @@ class EditItem:
     def userPut(self, page, oldtext, newtext, **kwargs):
         if oldtext == newtext:
             pywikibot.output('No changes were needed on %s'
-                             % page.title(asLink=True))
+                             % page.title(as_link=True))
             return
 
         pywikibot.output('\n\n>>> \03{lightpurple}%s\03{default} <<<'
-                         % page.title(asLink=True))
+                         % page.title(as_link=True))
         if True:
             pywikibot.showDiff(oldtext, newtext)
             if 'comment' in kwargs:
@@ -895,7 +895,7 @@ class EditItem:
             raise
         except pywikibot.Error as e:
             pywikibot.output('Failed to save %s: %r: %s' % (
-                page.title(asLink=True), e, e))
+                page.title(as_link=True), e, e))
 
 def FaultTolerantLiveRCPageGenerator(site):
     from pywikibot.comms.eventstreams import site_rc_listener
