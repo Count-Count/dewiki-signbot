@@ -118,7 +118,7 @@ class Controller(SingleSiteBot):
 
     logEntries = False
     doEdits = True
-    doNotify = True
+    doNotify = False
 
     def __init__(self, **kwargs):
         site = pywikibot.Site(user='CountCountBot')
@@ -661,7 +661,7 @@ class EditItem:
                              botflag=False)
 
     def isPostscriptum(self, line):
-        return re.match(r'^(:+\s*)?(PS|P\. ?S\.|Nachtrag|Postscriptum)\s*\S', line, re.I) is not None
+        return re.match(r'^(:+\s*)?(PS|P\. ?S\.|Nachtrag|Postscriptum|Notabene|NB|N\. ?B\.):?\s*\S', line, re.I) is not None
 
     def output(self, info):
         pywikibot.output('%s: %s' % (self.page, info))
