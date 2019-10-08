@@ -16,7 +16,7 @@ from urllib.parse import parse_qs, urlparse
 
 import pywikibot
 
-from signbot import BotThread, Controller, RevisionInfo
+from signbot import EditItem, Controller, RevisionInfo
 
 
 class TestSigning(unittest.TestCase):
@@ -65,7 +65,7 @@ class TestSigning(unittest.TestCase):
 
     def shouldBeHandled(self, pageUrl):
         (linesAfterDelay, rev) = self.getRevisionInfo(pageUrl)
-        bt = BotThread(self.controller.site, rev, self.controller)
+        bt = EditItem(self.controller.site, rev, self.controller)
         (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
         user = pywikibot.User(self.controller.site, rev.user)
         if res:
@@ -278,8 +278,8 @@ class TestSigning(unittest.TestCase):
         for i in range(1, 365):
             date += d
             with self.subTest(date=date):
-                s = BotThread.getSignatureTimestampString(date.timestamp())
-                self.assertTrue(BotThread.hasAnySignatureTimestamp(s),
+                s = EditItem.getSignatureTimestampString(date.timestamp())
+                self.assertTrue(EditItem.hasAnySignatureTimestamp(s),
                                 '\nTimestamp does not match regex: {}'
                                 .format(s))
 
