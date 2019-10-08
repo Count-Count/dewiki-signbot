@@ -368,7 +368,11 @@ class EditItem:
         else:
             old_text = self.page.getOldVersion(self.revInfo.oldRevision)
 
-        new_text = self.page.getOldVersion(self.revInfo.newRevision)
+        try:
+            new_text = self.page.getOldVersion(self.revInfo.newRevision)
+        except KeyError:
+            time.sleep(10)            
+            new_text = self.page.getOldVersion(self.revInfo.newRevision)
 
         if ('{{sla' in new_text.lower()
                 or '{{löschen' in new_text.lower()
