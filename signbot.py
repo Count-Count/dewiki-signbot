@@ -633,7 +633,7 @@ class EditItem:
 #                if self.page.title().startswith('Benutzer Diskussion:Count Count/'):
                 if Controller.doEdits:
                     self.userPut(self.page, self.page.get(),
-                                    '\n'.join(currenttext), comment=summary, botflag=False)
+                                    '\n'.join(currenttext), summary=summary, botflag=False)
                 break
             except pywikibot.EditConflict:
                 self.output('Edit conflict - retrying...')
@@ -657,7 +657,7 @@ class EditItem:
 #            if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
             if Controller.doEdits:
                 self.userPut(talk, talk.text, talktext,
-                             comment='Bot: Hinweis zum [[Hilfe:Signatur|Unterschreiben von Diskussionbeiträgen]] ergänzt',
+                             summary='Bot: Hinweis zum [[Hilfe:Signatur|Unterschreiben von Diskussionbeiträgen]] ergänzt',
                              minor=False,
                              botflag=False)
 
@@ -885,8 +885,8 @@ class EditItem:
                          % page.title(as_link=True))
         if True:
             pywikibot.showDiff(oldtext, newtext)
-            if 'comment' in kwargs:
-                pywikibot.output('Comment: %s' % kwargs['comment'])
+            if 'summary' in kwargs:
+                pywikibot.output('Summary: %s' % kwargs['summary'])
 
         page.text = newtext
         try:
