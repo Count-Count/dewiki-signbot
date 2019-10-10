@@ -116,7 +116,6 @@ class RevisionInfo():
 class Controller(SingleSiteBot):
     """The Signbot class."""
 
-    logEntries = False
     doEdits = True
     doNotify = True
 
