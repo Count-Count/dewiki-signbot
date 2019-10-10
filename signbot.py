@@ -434,9 +434,10 @@ class EditItem:
                         exactTimeSigned = tosignstr.find(
                             timestamp1) >= 0 or tosignstr.find(timestamp2) >= 0
 
-                        timeSigned = timeSigned or self.hasAnySignatureTimestamp(line)
-                        if timeSigned:
+                        lineTimeSigned = self.hasAnySignatureTimestamp(line)
+                        if lineTimeSigned:
                             signatureTimestampCount += 1
+                        timeSigned = timeSigned or lineTimeSigned
 
                         userSigned = userSigned or self.isUserSigned(user, tosignstr)
                         if timeSigned and userSigned:
