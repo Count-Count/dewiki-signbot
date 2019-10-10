@@ -513,6 +513,10 @@ class EditItem:
         if self.hasApplicableNobotsTemplate(new_lines, insertStartLine):
             return False, None
 
+        # if not user-signed don't consider
+        if not userSigned and timeSigned and not exactTimeSigned:
+            timeSigned = False
+
         # all checks passed
         return True, ShouldBeHandledResult(tosignnum, tosignstr, timeSigned, userSigned)
 
