@@ -117,7 +117,7 @@ class Controller(SingleSiteBot):
     """The Signbot class."""
 
     doEdits = True
-    doNotify = True
+    doNotify = os.name != 'nt'
 
     def __init__(self, **kwargs):
         site = pywikibot.Site(user='CountCountBot')
