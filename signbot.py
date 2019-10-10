@@ -118,7 +118,7 @@ class Controller(SingleSiteBot):
 
     logEntries = False
     doEdits = True
-    doNotify = False
+    doNotify = True
 
     def __init__(self, **kwargs):
         site = pywikibot.Site(user='CountCountBot')
