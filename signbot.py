@@ -237,10 +237,8 @@ class Controller(SingleSiteBot):
             except pywikibot.Error:
                 continue
             if link.namespace == 2:
-                #                pywikibot.output('optout found for user %s' % link.title.strip())
                 newuseroptout.add(link.title.strip())
             else:
-                #                pywikibot.output('optout found for page %s' % link.ns_title(onsite=self.site).strip())
                 newpageoptout.add(link.ns_title(onsite=self.site).strip())
         self.useroptout = newuseroptout
         self.pageoptout = newpageoptout
@@ -820,7 +818,7 @@ class EditItem:
             tempstr.endswith('|')
         ):
             return False
-        # not horzontal line
+        # not horizontal line
         if tempstr.startswith('----'):
             return False
         # not magic words
@@ -833,13 +831,8 @@ class EditItem:
         # Check for opt-out {{NoAutosign}} -> True
         if user in self.controller.useroptout:
             return True
-        # Check for 800 user edits -> False
-        # -> True
-#        return user.editCount() > 800
 
     def isPageOptOut(self, page):
-        #        self.output("Checking opt-out for %s" % page)
-        #        self.output("Page opt-out list: %s" % str(self.controller.pageoptout))
         return page in self.controller.pageoptout
 
     def isDiscussion(self, page):
