@@ -213,6 +213,14 @@ class TestSigning(unittest.TestCase):
 
 #    @unittest.skip('disabled')
     def test_needsUserOnlySigning(self):
+        self.checkNeedsToBeFullySigned(
+            # user not providing link to own page
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Dwarsl%C3%B6per&diff=prev&oldid=189371896&diffmode=source'
+        )
+        self.checkNeedsToBeFullySigned(
+            # unexperienced user faking sig
+            'https://de.wikipedia.org/w/index.php?title=Wikipedia:Qualit%C3%A4tssicherung/9._Oktober_2019&diff=prev&oldid=192990662&diffmode=source'
+        )
         self.checkNeedsUserOnlySigning(
             'https://de.wikipedia.org/w/index.php?title=Wikipedia:Bots/Antr%C3%A4ge_auf_Botflag&diff=prev&oldid=189592572&diffmode=source')  # on opt-in page
         self.checkNeedsUserOnlySigning(
