@@ -133,8 +133,6 @@ class Controller(SingleSiteBot):
                            if os.name != 'nt' else 'localhost')
         self.generator = FaultTolerantLiveRCPageGenerator(self.site)
         self.scheduler = sched.scheduler(time.time, time.sleep)
-        self.lastQueueIdleTime = datetime.now()
-        threading.Thread(target=self.processQueue).start()
 
     def processQueue(self):
         while True:
@@ -161,6 +159,11 @@ class Controller(SingleSiteBot):
         elif page.isRedirectPage():
             return True
         return super().skip_page(page)
+
+    def run(self):
+        self.lastQueueIdleTime = datetime.now()
+        threading.Thread(target=self.processQueue).start()
+        super().run()
 
     def treat(self, page):
         """Process a single Page object from stream."""
