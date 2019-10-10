@@ -196,7 +196,7 @@ class Controller(SingleSiteBot):
                 self.site, RevisionInfo.fromRecentChange(change), self)
             self.scheduler.enter(0, 1, t.checkEdit)
             if datetime.now() - self.lastQueueIdleTime > timedelta(minutes=1):
-                pywikibot.error('Queue idle longer than one minute ago: %s, queue depth: %d' % (str(
+                pywikibot.warning('Queue idle longer than one minute ago: %s, queue depth: %d' % (str(
                     datetime.now() - self.lastQueueIdleTime), len(self.scheduler.queue)))
 
     def teardown(self):
