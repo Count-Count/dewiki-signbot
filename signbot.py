@@ -461,15 +461,11 @@ class EditItem:
             return False, None
 
         if (self.hasAnySignatureAllowedUserLink(tosignstr)
-                and timeSigned):
-            if not exactTimeSigned:
-                self.output(
-                    'Timestamp and other user link found - likely copied')
-                return False, None
-            elif self.controller.isExperiencedUser(user):
-                self.output(
-                    'Other user link found with exact timestamp - likely copied')
-                return False, None
+                and timeSigned
+                and self.controller.isExperiencedUser(user)):
+            self.output(
+                'Timestamp and other user link found - likely copied')
+            return False, None
 
         if not timeSigned and not userSigned:
             if self.isAlreadySignedInFollowingLines(user, new_lines, tosignnum):
