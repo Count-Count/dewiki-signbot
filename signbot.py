@@ -824,7 +824,7 @@ class EditItem:
         if tempstr.startswith('----'):
             return False
         # not magic words
-        if re.match(u'^__[A-ZÄÖÜ_]+__$', tempstr):
+        if re.match(r'^__[A-ZÄÖÜ_]+__$', tempstr):
             return False
 
         return True
