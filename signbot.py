@@ -13,11 +13,9 @@
 
 from datetime import datetime
 from datetime import timedelta
-from urllib.parse import urlparse, parse_qs
 import os
 import re
 import time
-import random
 import signal
 import threading
 import hashlib
@@ -25,11 +23,9 @@ import base64
 import locale
 import pytz
 import traceback
-import gc
 import sched
 import pywikibot
 from pywikibot.bot import SingleSiteBot
-from pywikibot.comms.eventstreams import site_rc_listener
 from pywikibot.diff import PatchManager
 
 from redis import Redis
