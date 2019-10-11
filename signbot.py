@@ -314,12 +314,11 @@ class ShouldBeHandledResult:
 class EditItem:
     timezone = pytz.timezone('Europe/Berlin')
 
-    def __init__(self, site, revInfo, controller):
-        threading.Thread.__init__(self)
+    def __init__(self, site: pywikibot.BaseSite, revInfo: RevisionInfo, controller: Controller):
         self.site = site
         self.revInfo = revInfo
         self.controller = controller
-        self.page = None
+        self.page: pywikibot.Page
 
     def changeShouldBeHandled(self):
         self.page = pywikibot.Page(
