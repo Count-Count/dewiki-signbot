@@ -908,7 +908,7 @@ def FaultTolerantLiveRCPageGenerator(site):
             continue
         try:
             page = pywikibot.Page(site, entry['title'], entry['namespace'])
-        except:
+        except Exception:
             pywikibot.warning('Exception instantiating page %s: %s' % (entry['title'], traceback.format_exc()))
             continue
         page._rcinfo = entry
