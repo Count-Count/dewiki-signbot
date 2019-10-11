@@ -52,7 +52,7 @@ class TestSigning(unittest.TestCase):
         pywikibot.stopme()
         super(TestSigning, self).tearDown()
 
-    def getRevisionInfo(self, pageUrl: str) -> RevisionInfo:
+    def getRevisionInfo(self, pageUrl: str):
         re.compile('line', re.I)
         queryVars = parse_qs(urlparse(pageUrl).query)
         title = queryVars['title'][0]
@@ -303,7 +303,7 @@ class TestSigning(unittest.TestCase):
     def test_timestampMatching(self):
         date = datetime.datetime.now()
         d = datetime.timedelta(days=1)
-        for i in range(1, 365):
+        for _ in range(1, 365):
             date += d
             with self.subTest(date=date):
                 s = EditItem.getSignatureTimestampString(date.timestamp())
