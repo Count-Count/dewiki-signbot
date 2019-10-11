@@ -7,9 +7,30 @@
 # (https://wikitech.wikimedia.org/wiki/User:Zhuyifei1999)
 # Heavily modified by Count Count
 # (https://de.wikipedia.org/wiki/Benutzer:Count_Count)
+#
+# DUAL LICENSED: You are free to choose either or both of below licenses:
+#
+# 1.
+#
 # Distributed under the terms of
 # Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
 # https://creativecommons.org/licenses/by-sa/3.0/
+#
+# 2.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General License for more details.
+#
+# You should have received a copy of the GNU General License
+# along with self program.  If not, see <http://www.gnu.org/licenses/>
+#
 
 from datetime import datetime
 from datetime import timedelta
