@@ -11,7 +11,6 @@
 # Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
 # https://creativecommons.org/licenses/by-sa/3.0/
 
-import datetime
 from datetime import datetime
 from datetime import timedelta
 from urllib.parse import urlparse, parse_qs
@@ -141,15 +140,15 @@ class Controller(SingleSiteBot):
                 self.lastQueueIdleTime = datetime.now()
                 self.scheduler.run(blocking = False)
                 time.sleep(1)
-            except Exception as e:
+            except Exception:
                 pywikibot.error('Error during processing queue: %s ' % traceback.format_exc())
                 time.sleep(10)
 
     def setup(self):
         """Setup the bot."""
         if os.name != 'nt':
-            signal.signal(signal.SIGALRM, on_timeout)
-            signal.alarm(TIMEOUT)
+            signal.signal(signal.SIGALRM, on_timeout)  # pylint: disable=E1101
+            signal.alarm(TIMEOUT)  # pylint: disable=E1101
 
     def skip_page(self, page):
         """Skip special/media pages"""
@@ -175,7 +174,7 @@ class Controller(SingleSiteBot):
         change = page._rcinfo
 
         if os.name != 'nt':
-            signal.alarm(TIMEOUT)
+            signal.alarm(TIMEOUT)  # pylint: disable=E1101
 
         if change['namespace'] == 2 and change['title'] == ('Benutzer:CountCountBot/exclude regex'):
             pywikibot.output('exclude regex page changed')
@@ -411,7 +410,7 @@ class EditItem:
 
         signatureTimestampCount = 0
 
-        for tag, i1, i2, j1, j2 in group:
+        for tag, _, _, j1, j2 in group:
             if tag == 'insert':
                 insertStartLine = j1
                 for j in range(j1, j2):
@@ -595,7 +594,7 @@ class EditItem:
             func()
             if datetime.now() - startTime > timedelta(seconds=10):
                 self.warning("Execution elapsed %s" % (str(datetime.now() - startTime)))
-        except Exception as e:
+        except Exception:
             self.error(traceback.format_exc())
 
     def checkEdit(self):
@@ -625,7 +624,6 @@ class EditItem:
                     return
                 currenttext[tosignindex] += self.getSignature(
                     self.shouldBeHandledResult.tosignstr, user, self.shouldBeHandledResult.isAlreadyTimeSigned, self.shouldBeHandledResult.isAlreadyUserSigned)
-                signedLine = currenttext[tosignindex]
 
                 self.output('Signing')
 
