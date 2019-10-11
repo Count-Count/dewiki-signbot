@@ -360,7 +360,7 @@ class EditItem:
             self.output('%s opted-out' % user.username)
             return False, None
 
-        if (self.page.namespace() == pywikibot.site.Namespace.USER_TALK 
+        if (self.page.namespace() == pywikibot.site.Namespace.USER_TALK
                 and self.page.title(with_ns=False) == user.username
                 and self.controller.isExperiencedUser(user)):
             self.output('Experienced user %s edited own talk page' % user.username)
@@ -375,7 +375,7 @@ class EditItem:
         try:
             new_text = self.page.getOldVersion(self.revInfo.newRevision)
         except KeyError:
-            time.sleep(10)            
+            time.sleep(10)
             new_text = self.page.getOldVersion(self.revInfo.newRevision)
 
         if ('{{sla' in new_text.lower()
@@ -608,7 +608,7 @@ class EditItem:
         self.output('Waiting')
         if Controller.doEdits:
             self.controller.scheduler.enter(5*60, 1, self.continueAferDelay)
-    
+
     def continueAferDelay(self):
         self.runWrapped(self.continueAferDelay0)
 
