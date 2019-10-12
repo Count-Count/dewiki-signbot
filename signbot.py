@@ -335,7 +335,6 @@ class EditItem:
         self.site = site
         self.revInfo = revInfo
         self.controller = controller
-        self.page: pywikibot.Page
 
     def changeShouldBeHandled(self):
         self.page = pywikibot.Page(
