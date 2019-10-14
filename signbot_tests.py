@@ -127,7 +127,7 @@ class TestSigning(unittest.TestCase):
                          "Should not be timestamp signed but is: %s" % pageUrl)
 
     def checkDoesNotNeedToBeSigned(self, pageUrl):
-        (res, shouldBeHandledResult) = self.shouldBeHandled(pageUrl)
+        (res, _) = self.shouldBeHandled(pageUrl)
         self.assertFalse(res,
                          "Should not need signing by bot but does: %s" % pageUrl)
 
