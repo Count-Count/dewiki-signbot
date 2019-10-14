@@ -390,6 +390,7 @@ class EditItem:
         try:
             new_text = self.page.getOldVersion(self.revInfo.newRevision)
         except KeyError:
+            self.warning('New revision %d not found, retrying...' % self.revInfo.newRevision)
             time.sleep(10)
             new_text = self.page.getOldVersion(self.revInfo.newRevision)
 
