@@ -702,7 +702,15 @@ class EditItem:
             rvlimit=1
         )
         try:
-            res = req.submit()
+            try:
+                res = req.submit()
+            except pywikibot.data.api.APIError as e:
+                if e.code == 'badid_rvstartid':
+                    self.output("getTags() rvstartid not found. Retrying... ")
+                    time.sleep(10)
+                    res = req.submit()
+                else:
+                    raise
         except Exception as e:
             pywikibot.exception(e)
             return []
