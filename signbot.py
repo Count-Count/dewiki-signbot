@@ -52,6 +52,8 @@ from pywikibot.diff import PatchManager
 from redis import Redis
 
 # https://gerrit.wikimedia.org/r/#/c/pywikibot/core/+/525179/
+
+
 def monkey_patch(site):
     from pywikibot.site import PageInUse
 
@@ -91,6 +93,7 @@ def monkey_patch(site):
                 pass
 
     site.__class__.lock_page = lock_page
+
 
 TIMEOUT = 600  # We expect at least one rc entry every 10 minutes
 
@@ -155,7 +158,7 @@ class Controller(SingleSiteBot):
         while not self.stopped:
             try:
                 self.lastQueueIdleTime = datetime.now()
-                self.scheduler.run(blocking = False)
+                self.scheduler.run(blocking=False)
                 time.sleep(1)
             except Exception:
                 pywikibot.error('Error during processing queue: %s ' % traceback.format_exc())
@@ -426,8 +429,8 @@ class EditItem:
                 for j in range(j1, j2):
                     line = hunk.b[j]
                     if (
-                        self.page == user.getUserTalkPage() or
-                        self.page.title().startswith(
+                        self.page == user.getUserTalkPage()
+                        or self.page.title().startswith(
                             user.getUserTalkPage().title() + '/')
                     ):
                         if '{{' in line.lower():
@@ -587,7 +590,8 @@ class EditItem:
                 currenttext[shouldBeHandledResult.tosignnum] == shouldBeHandledResult.tosignstr):
             tosignindex = shouldBeHandledResult.tosignnum
         elif currenttext.count(shouldBeHandledResult.tosignstr) == 1:
-            # line not at same position but just one line with same text found, assuming that it is the line to be signed
+            # line not at same position but just one line with same text found,
+            # assuming that it is the line to be signed
             tosignindex = currenttext.index(shouldBeHandledResult.tosignstr)
         else:
             self.output('Line no longer found, probably signed')
@@ -632,8 +636,10 @@ class EditItem:
                     user, self.shouldBeHandledResult, currenttext)
                 if tosignindex < 0:
                     return
-                currenttext[tosignindex] += self.getSignature(
-                    self.shouldBeHandledResult.tosignstr, user, self.shouldBeHandledResult.isAlreadyTimeSigned, self.shouldBeHandledResult.isAlreadyUserSigned)
+                currenttext[tosignindex] += self.getSignature(self.shouldBeHandledResult.tosignstr,
+                                                              user,
+                                                              self.shouldBeHandledResult.isAlreadyTimeSigned,
+                                                              self.shouldBeHandledResult.isAlreadyUserSigned)
 
                 self.output('Signing')
 
@@ -646,7 +652,7 @@ class EditItem:
 #                if self.page.title().startswith('Benutzer Diskussion:Count Count/'):
                 if Controller.doEdits:
                     self.userPut(self.page, self.page.get(),
-                                    '\n'.join(currenttext), summary=summary, botflag=False)
+                                 '\n'.join(currenttext), summary=summary, botflag=False)
                 break
             except pywikibot.EditConflict:
                 self.output('Edit conflict - retrying...')
@@ -669,10 +675,10 @@ class EditItem:
             talktext += '{{subst:Unterschreiben}}'
 #            if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
             if Controller.doEdits:
-                self.userPut(talk, talk.text, talktext,
-                             summary='Bot: Hinweis zum [[Hilfe:Signatur|Unterschreiben von Diskussionbeiträgen]] ergänzt',
-                             minor=False,
-                             botflag=False)
+                self.userPut(
+                    talk, talk.text, talktext,
+                    summary='Bot: Hinweis zum [[Hilfe:Signatur|Unterschreiben von Diskussionbeiträgen]] ergänzt',
+                    minor=False, botflag=False)
 
     def isPostscriptum(self, line):
         return re.match(r'^(:+\s*)?(PS|P\. ?S\.|Nachtrag|Postscriptum|Notabene|NB|N\. ?B\.):?\s*\S', line, re.I) is not None
@@ -890,7 +896,12 @@ class EditItem:
         notifyString = ' (benachrichtigt)' if notified else ''
         revTimestampString = self.getSignatureTimestampString(revTimestamp)
         text += "=== %s ===\n[https://de.wikipedia.org/w/index.php?title=%s&diff=prev&oldid=%s Unsignierte Bearbeitung] von {{noping|%s}}%s um %s.<br>\n" % (
-            page.title(as_link=True), page.title(as_url=True), revision, user.username, notifyString, revTimestampString)
+            page.title(as_link=True),
+            page.title(as_url=True),
+            revision,
+            user.username,
+            notifyString,
+            revTimestampString)
         text += "Generierte Bot-Bearbeitung: ''(%s)''\n<pre>%s</pre>\n\n" % (
             summary, botLine)
         logPage.text = text
@@ -918,6 +929,7 @@ class EditItem:
             pywikibot.output('Failed to save %s: %r: %s' % (
                 page.title(as_link=True), e, e))
 
+
 def FaultTolerantLiveRCPageGenerator(site):
     from pywikibot.comms.eventstreams import site_rc_listener
 
@@ -932,6 +944,7 @@ def FaultTolerantLiveRCPageGenerator(site):
             continue
         page._rcinfo = entry
         yield page
+
 
 def main():
     locale.setlocale(locale.LC_ALL, 'de_DE.utf8')
