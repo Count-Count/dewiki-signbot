@@ -42,18 +42,16 @@ import threading
 import hashlib
 import base64
 import locale
-import pytz
 import traceback
 import sched
+import pytz
+from redis import Redis
 import pywikibot
 from pywikibot.bot import SingleSiteBot
 from pywikibot.diff import PatchManager
 
-from redis import Redis
 
 # https://gerrit.wikimedia.org/r/#/c/pywikibot/core/+/525179/
-
-
 def monkey_patch(site):
     from pywikibot.site import PageInUse
 
@@ -98,12 +96,12 @@ def monkey_patch(site):
 TIMEOUT = 600  # We expect at least one rc entry every 10 minutes
 
 
-class TimeoutError(Exception):
+class ReadingRecentChangesTimeoutError(Exception):
     pass
 
 
 def on_timeout(signum, frame):
-    raise TimeoutError
+    raise ReadingRecentChangesTimeoutError
 
 
 class RevisionInfo:
@@ -147,12 +145,13 @@ class Controller(SingleSiteBot):
         self.reloadOptOut()
         self.reloadOptIn()
         self.botkey = os.environ.get("REDIS_KEY")
-        if not self.botkey or "" == self.botkey.strip():
+        if not self.botkey:
             raise Exception("REDIS_KEY environment variable not set")
         self.redis = Redis(host="tools-redis" if os.name != "nt" else "localhost")
         self.generator = FaultTolerantLiveRCPageGenerator(self.site)
         self.scheduler = sched.scheduler(time.time, time.sleep)
         self.stopped = False
+        self.lastQueueIdleTime: datetime
 
     def processQueue(self):
         while not self.stopped:
@@ -282,8 +281,8 @@ class Controller(SingleSiteBot):
                 newpageoptin.add(link.ns_title(onsite=self.site).strip())
         self.pageoptin = newpageoptin
 
-    def hash(self, str):
-        return base64.b64encode(hashlib.sha224(str.encode("utf-8")).digest()).decode("ascii")
+    def hash(self, s):
+        return base64.b64encode(hashlib.sha224(s.encode("utf-8")).digest()).decode("ascii")
 
     def getKey(self, user):
         return self.hash(self.botkey) + ":" + self.hash(self.botkey + ":" + user.username)
@@ -308,10 +307,12 @@ class Controller(SingleSiteBot):
             p.delete(key)
             p.execute()
             return True
+        else:
+            return False
 
     def clearnotify(self, user):
         if not Controller.doNotify:
-            return False
+            return
         if user.isAnonymous():
             return
         key = self.getKey(user)
@@ -479,7 +480,7 @@ class EditItem:
 
         if not timeSigned and not userSigned and self.isPostscriptum(tosignstr) and tosignnum > 1:
             checkLineNo = tosignnum - 1
-            if new_lines[checkLineNo].strip() == "" and checkLineNo > 0:
+            if not new_lines[checkLineNo].strip() and checkLineNo > 0:
                 checkLineNo -= 1
             if self.isUserSigned(user, new_lines[checkLineNo]) and self.hasAnySignatureTimestamp(
                 new_lines[checkLineNo]
@@ -729,22 +730,21 @@ class EditItem:
         else:
             altText = ""
             timeInfo = "|" + timestamp
-            pass
 
         return p + "{{unsigniert|%s%s%s}}" % (user.username, timeInfo, altText)
 
     @staticmethod
     def getSignatureTimestampString(timestamp):
-        time = pytz.utc.localize(pywikibot.Timestamp.utcfromtimestamp(timestamp)).astimezone(EditItem.timezone)
-        abbrevDot = "" if time.month == 5 else "."  # no abbrev dot for Mai
+        localizedTime = pytz.utc.localize(pywikibot.Timestamp.utcfromtimestamp(timestamp)).astimezone(EditItem.timezone)
+        abbrevDot = "" if localizedTime.month == 5 else "."  # no abbrev dot for Mai
         if os.name == "nt":
             return (
-                time.strftime("%H:%M, ")
-                + time.strftime("%e").replace(" ", "")
-                + time.strftime(". %b" + abbrevDot + " %Y (%Z)")
+                localizedTime.strftime("%H:%M, ")
+                + localizedTime.strftime("%e").replace(" ", "")
+                + localizedTime.strftime(". %b" + abbrevDot + " %Y (%Z)")
             ).replace("Mrz", "Mär")
         else:
-            return time.strftime("%H:%M, %-d. %b" + abbrevDot + " %Y (%Z)")
+            return localizedTime.strftime("%H:%M, %-d. %b" + abbrevDot + " %Y (%Z)")
 
     def userlink(self, user):
         if user.isAnonymous():
@@ -848,7 +848,7 @@ class EditItem:
         return page in self.controller.pageoptout
 
     def isDiscussion(self, page):
-        # TODO: sandbox
+        # TODO: opt-in list
 
         # __NEWSECTIONLINK__ -> True
         if "newsectionlink" in self.page.properties():
@@ -870,41 +870,16 @@ class EditItem:
                 return reobj.group(0)
         return None
 
-    def writeLog(self, page, botLine, summary, revision, user, revSummary, revTimestamp, notified):
-        logPage = pywikibot.Page(self.site, "Benutzer:CountCountBot/Log")
-        oldText = logPage.text
-        text = oldText
-        summary = summary.replace("{{", "<nowiki>{{</nowiki>")
-        if not text.endswith("\n"):
-            text += "\n"
-        text += "\n"
-        notifyString = " (benachrichtigt)" if notified else ""
-        revTimestampString = self.getSignatureTimestampString(revTimestamp)
-        text += (
-            "=== %s ===\n[https://de.wikipedia.org/w/index.php?title=%s&diff=prev&oldid=%s Unsignierte Bearbeitung] von {{noping|%s}}%s um %s.<br>\n"
-            % (
-                page.title(as_link=True),
-                page.title(as_url=True),
-                revision,
-                user.username,
-                notifyString,
-                revTimestampString,
-            )
-        )
-        text += "Generierte Bot-Bearbeitung: ''(%s)''\n<pre>%s</pre>\n\n" % (summary, botLine)
-        logPage.text = text
-        logPage.save(summary="Neuer Log-Eintrag.", botflag=False)
-
     def userPut(self, page, oldtext, newtext, **kwargs):
         if oldtext == newtext:
             pywikibot.output("No changes were needed on %s" % page.title(as_link=True))
             return
 
         pywikibot.output("\n\n>>> \03{lightpurple}%s\03{default} <<<" % page.title(as_link=True))
-        if True:
-            pywikibot.showDiff(oldtext, newtext)
-            if "summary" in kwargs:
-                pywikibot.output("Summary: %s" % kwargs["summary"])
+
+        pywikibot.showDiff(oldtext, newtext)
+        if "summary" in kwargs:
+            pywikibot.output("Summary: %s" % kwargs["summary"])
 
         page.text = newtext
         try:

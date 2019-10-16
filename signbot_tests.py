@@ -65,12 +65,12 @@ class TestSigning(unittest.TestCase):
         found = False
         cutoffTime = page._revisions[revId].timestamp + datetime.timedelta(seconds=5 * 60)
         lastRevInWindow = revId
-        for id in sorted(page._revisions):
-            if id == revId:
+        for pageRevId in sorted(page._revisions):
+            if pageRevId == revId:
                 found = True
             elif found:
-                if page._revisions[id].timestamp < cutoffTime:
-                    lastRevInWindow = id
+                if page._revisions[pageRevId].timestamp < cutoffTime:
+                    lastRevInWindow = pageRevId
         newRevision = page._revisions[revId]
         epoch = datetime.datetime.utcfromtimestamp(0)
         oldRevId = newRevision.parent_id

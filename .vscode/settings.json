@@ -3,6 +3,10 @@
     "python.linting.mypyEnabled": true,
     "python.linting.pylintEnabled": true,
     "python.linting.flake8Enabled": true,
+    "python.linting.pylintArgs": [
+        "--max-line-length=120",
+        "-d C0301,C0330,C0114,C0116,C0103,C0115,R0913,R0904,R0903,R0914,R0911,R0912,R0915,W0703,W0212,R1705,R0902,R0916"
+    ],
     "python.linting.flake8Args": [
         "--max-line-length=120",
         "-d E501"
