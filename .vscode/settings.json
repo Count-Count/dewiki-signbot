@@ -9,6 +9,13 @@
         "-p",
         "*test*.py"
     ],
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": [
+        "--line-length",
+        "120",
+        "--target-version",
+        "py38"
+    ],
     "python.testing.pytestEnabled": false,
     "python.testing.nosetestsEnabled": false,
     "python.testing.unittestEnabled": true,

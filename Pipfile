@@ -6,6 +6,7 @@ verify_ssl = true
 [dev-packages]
 mypy = "*"
 pylint = "*"
+black = "*"
 
 [packages]
 redis = "*"
@@ -15,3 +16,6 @@ sseclient = "!=0.0.24,!=0.0.23,>=0.0.18"
 
 [requires]
 python_version = "3.8"
+
+[pipenv]
+allow_prereleases = true
