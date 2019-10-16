@@ -394,12 +394,6 @@ class EditItem:
             time.sleep(10)
             new_text = self.page.getOldVersion(self.revInfo.newRevision)
 
-        if ('{{sla' in new_text.lower()
-                or '{{löschen' in new_text.lower()
-                or '{{delete' in new_text.lower()):
-            self.output('{{sla -- ignored')
-            return False, None
-
         new_lines = new_text.split('\n')
         diff = PatchManager(old_text.split('\n') if old_text else [],
                             new_lines,

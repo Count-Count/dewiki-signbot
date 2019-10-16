@@ -137,6 +137,10 @@ class TestSigning(unittest.TestCase):
         #            # ...
         #            'https://de.wikipedia.org/w/index.php?title=Wikipedia:Administratoren/Notizen&diff=prev&oldid=190236331&diffmode=source')
         self.checkNeedsToBeFullySigned(
+            # edit on talk page with talk page text containing '{{sla'
+            'https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Der-Wir-Ing&diff=prev&oldid=193171203&diffmode=source'
+        )
+        self.checkNeedsToBeFullySigned(
             # normal ip edit
             'https://de.wikipedia.org/w/index.php?title=Wikipedia:Administratoren/Anfragen&diff=prev&oldid=192729175&diffmode=source'
         )
