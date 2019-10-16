@@ -4,7 +4,8 @@
     "python.linting.pylintEnabled": true,
     "python.linting.flake8Enabled": true,
     "python.linting.flake8Args": [
-        "--max-line-length=120"
+        "--max-line-length=120",
+        "-d E501"
     ],
     "python.testing.unittestArgs": [
         "-v",
