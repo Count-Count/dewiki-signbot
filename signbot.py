@@ -32,6 +32,7 @@
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
 
+from typing import Any, Dict, Tuple, List, Optional, cast, Iterator, Callable, Pattern
 from datetime import datetime
 from datetime import timedelta
 import os
@@ -49,13 +50,13 @@ from redis import Redis
 import pywikibot
 from pywikibot.bot import SingleSiteBot
 from pywikibot.diff import PatchManager
+from pywikibot.site import PageInUse
+from pywikibot.comms.eventstreams import site_rc_listener
 
 
 # https://gerrit.wikimedia.org/r/#/c/pywikibot/core/+/525179/
-def monkey_patch(site):
-    from pywikibot.site import PageInUse
-
-    def lock_page(self, page, block=True):
+def monkey_patch(site: Any) -> None:
+    def lock_page(self: Any, page: Any, block: bool = True) -> None:
         """
         Lock page for writing. Must be called before writing any page.
         We don't want different threads trying to write to the same page
@@ -100,14 +101,14 @@ class ReadingRecentChangesTimeoutError(Exception):
     pass
 
 
-def on_timeout(signum, frame):
+def on_timeout(signum: Any, frame: Any) -> None:
     raise ReadingRecentChangesTimeoutError
 
 
 class RevisionInfo:
-    @classmethod
-    def fromRecentChange(cls, change) -> "RevisionInfo":
-        return cls(
+    @staticmethod
+    def fromRecentChange(change: Dict[str, Any]) -> "RevisionInfo":
+        return RevisionInfo(
             change["namespace"],
             change["title"],
             change["type"],
@@ -119,7 +120,18 @@ class RevisionInfo:
             change["timestamp"],
         )
 
-    def __init__(self, namespace, title, edittype, bot, comment, user, oldRevision, newRevision, timestamp):
+    def __init__(
+        self,
+        namespace: str,
+        title: str,
+        edittype: str,
+        bot: bool,
+        comment: str,
+        user: str,
+        oldRevision: int,
+        newRevision: int,
+        timestamp: int,
+    ) -> None:
         self.namespace = namespace
         self.title = title
         self.bot = bot
@@ -131,16 +143,16 @@ class RevisionInfo:
         self.timestamp = timestamp
 
 
-class Controller(SingleSiteBot):
+class Controller(SingleSiteBot):  # type: ignore (SingleSiteBot has not type information)
     """The Signbot class."""
 
     doEdits = True
     doNotify = os.name != "nt"
 
-    def __init__(self, **kwargs):
+    def __init__(self) -> None:
         site = pywikibot.Site(user="CountCountBot")
         monkey_patch(site)
-        super(Controller, self).__init__(site=site, **kwargs)
+        super(Controller, self).__init__(site=site)
         self.reloadRegex()
         self.reloadOptOut()
         self.reloadOptIn()
@@ -152,8 +164,9 @@ class Controller(SingleSiteBot):
         self.scheduler = sched.scheduler(time.time, time.sleep)
         self.stopped = False
         self.lastQueueIdleTime: datetime
+        self.excluderegex: List[Pattern[str]]
 
-    def processQueue(self):
+    def processQueue(self) -> None:
         while not self.stopped:
             try:
                 self.lastQueueIdleTime = datetime.now()
@@ -163,13 +176,13 @@ class Controller(SingleSiteBot):
                 pywikibot.error("Error during processing queue: %s " % traceback.format_exc())
                 time.sleep(10)
 
-    def setup(self):
+    def setup(self) -> None:
         """Setup the bot."""
         if os.name != "nt":
             signal.signal(signal.SIGALRM, on_timeout)  # pylint: disable=E1101
             signal.alarm(TIMEOUT)  # pylint: disable=E1101
 
-    def skip_page(self, page):
+    def skip_page(self, page: pywikibot.Page) -> bool:
         """Skip special/media pages"""
         if page.namespace().id < 0:
             return True
@@ -177,18 +190,18 @@ class Controller(SingleSiteBot):
             return True
         elif page.isRedirectPage():
             return True
-        return super().skip_page(page)
+        return cast(bool, super().skip_page(page))
 
-    def run(self):
+    def run(self) -> None:
         self.lastQueueIdleTime = datetime.now()
         threading.Thread(target=self.processQueue).start()
         super().run()
 
-    def exit(self):
+    def exit(self) -> None:
         self.stopped = True
         super().exit()
 
-    def treat(self, page):
+    def treat(self, page: pywikibot.Page) -> None:
         """Process a single Page object from stream."""
         change = page._rcinfo
 
@@ -223,18 +236,17 @@ class Controller(SingleSiteBot):
                     % (str(datetime.now() - self.lastQueueIdleTime), len(self.scheduler.queue))
                 )
 
-    def teardown(self):
+    def teardown(self) -> None:
         """Bot has finished due to unknown reason."""
         if self._generator_completed:
             pywikibot.log("Main thread exit - THIS SHOULD NOT HAPPEN")
             time.sleep(10)
 
-    def reloadRegex(self):
+    def reloadRegex(self) -> None:
         pywikibot.output("Reloading exclude regex")
         # We do not directly assign to self.controller.excluderegex right
         # now to avoid issues with multi-threading
         lst = []
-
         repage = pywikibot.Page(self.site, "User:CountCountBot/exclude_regex")
         for line in repage.get(force=True).split("\n"):
             line = line.strip()
@@ -243,7 +255,7 @@ class Controller(SingleSiteBot):
         lst.append(re.compile(r"{{(?:Vorlage:)?nobots\|unsigned}}", re.I))
         self.excluderegex = lst
 
-    def reloadOptOut(self):
+    def reloadOptOut(self) -> None:
         pywikibot.output("Reloading optout list")
         optoutPage = pywikibot.Page(self.site, "User:CountCountBot/Opt-Out")
         newuseroptout = set()
@@ -265,7 +277,7 @@ class Controller(SingleSiteBot):
         self.useroptout = newuseroptout
         self.pageoptout = newpageoptout
 
-    def reloadOptIn(self):
+    def reloadOptIn(self) -> None:
         pywikibot.output("Reloading optin list")
         optinPage = pywikibot.Page(self.site, "User:CountCountBot/Opt-In")
         newpageoptin = set()
@@ -281,16 +293,17 @@ class Controller(SingleSiteBot):
                 newpageoptin.add(link.ns_title(onsite=self.site).strip())
         self.pageoptin = newpageoptin
 
-    def hash(self, s):
+    def hash(self, s: str) -> str:
         return base64.b64encode(hashlib.sha224(s.encode("utf-8")).digest()).decode("ascii")
 
-    def getKey(self, user):
+    def getKey(self, user: pywikibot.User) -> str:
+        assert self.botkey is not None
         return self.hash(self.botkey) + ":" + self.hash(self.botkey + ":" + user.username)
 
-    def isExperiencedUser(self, user):
+    def isExperiencedUser(self, user: pywikibot.User) -> bool:
         return not user.isAnonymous() and user.editCount() > 500
 
-    def checknotify(self, user):
+    def checknotify(self, user: pywikibot.User) -> bool:
         if not Controller.doNotify:
             return False
         if user.isAnonymous():
@@ -299,7 +312,7 @@ class Controller(SingleSiteBot):
             return False
         reset = int(time.time()) + 60 * 60 * 24 * 30
         key = self.getKey(user)
-        p = self.redis.pipeline()
+        p = self.redis.pipeline()  # type: ignore (typeshed stub is missing Pipeline class definition)
         p.incr(key)
         p.expireat(key, reset + 10)
         limitReached = p.execute()[0] >= 3
@@ -310,19 +323,19 @@ class Controller(SingleSiteBot):
         else:
             return False
 
-    def clearnotify(self, user):
+    def clearnotify(self, user: pywikibot.User) -> None:
         if not Controller.doNotify:
             return
         if user.isAnonymous():
             return
         key = self.getKey(user)
-        p = self.redis.pipeline()
+        p = self.redis.pipeline()  # type: ignore (typeshed stub is missing Pipeline class definition)
         p.delete(key)
         p.execute()
 
 
 class ShouldBeHandledResult:
-    def __init__(self, tosignnum, tosignstr, isAlreadyTimeSigned, isAlreadyUserSigned):
+    def __init__(self, tosignnum: int, tosignstr: str, isAlreadyTimeSigned: bool, isAlreadyUserSigned: bool) -> None:
         self.tosignnum = tosignnum
         self.tosignstr = tosignstr
         self.isAlreadyTimeSigned = isAlreadyTimeSigned
@@ -336,12 +349,14 @@ class EditItem:
         self.site = site
         self.revInfo = revInfo
         self.controller = controller
+        self.page: pywikibot.Page
+        self.shouldBeHandledResult: Optional[ShouldBeHandledResult]
 
-    def changeShouldBeHandled(self):
+    def changeShouldBeHandled(self) -> Tuple[bool, Optional[ShouldBeHandledResult]]:
         self.page = pywikibot.Page(self.site, self.revInfo.title, ns=self.revInfo.namespace)
         self.output("Handling")
 
-        if self.isPageOptOut(self.page.title(insite=True)):
+        if self.isPageOptOut():
             self.output("Page %s on opt-out list" % self.page.title(insite=True))
             return False, None
 
@@ -364,7 +379,7 @@ class EditItem:
             return False, None
         if self.page.namespace() == 4:
             # Project pages needs attention (__NEWSECTIONLINK__)
-            if not self.isDiscussion(self.page):
+            if not self.isDiscussion():
                 self.output("Not a discussion")
                 return False, None
 
@@ -402,8 +417,8 @@ class EditItem:
         diff = PatchManager(old_text.split("\n") if old_text else [], new_lines, by_letter=True)
         #        diff.print_hunks()
 
-        tosignstr = False
-        tosignnum = False
+        tosignstr = ""
+        tosignnum = -1
 
         if len(diff.hunks) > 1:
             self.output("Multiple diff hunks %d" % len(diff.blocks))
@@ -462,7 +477,7 @@ class EditItem:
                 self.output("Line replacement found")
                 return False, None
 
-        if tosignstr is False:
+        if not tosignstr:
             self.output("No inserts")
             return False, None
 
@@ -527,7 +542,7 @@ class EditItem:
         # all checks passed
         return True, ShouldBeHandledResult(tosignnum, tosignstr, timeSigned, userSigned)
 
-    def hasApplicableNobotsTemplate(self, new_lines, insertStartLine):
+    def hasApplicableNobotsTemplate(self, new_lines: List[str], insertStartLine: int) -> bool:
         for line in new_lines:
             if re.search(r"{{(?:Vorlage:)?nobots\|unsigned}}", line, re.I):
                 self.output("Global {{nobots|unsigned}} found")
@@ -554,7 +569,7 @@ class EditItem:
                     secIndex = len(match.group(1))
         return False
 
-    def isAlreadySignedInFollowingLines(self, user, new_lines, tosignnum):
+    def isAlreadySignedInFollowingLines(self, user: pywikibot.User, new_lines: List[str], tosignnum: int) -> bool:
         for lineNo in range(tosignnum + 1, len(new_lines)):
             line = new_lines[lineNo].strip()
             if self.isUserSigned(user, line) and self.hasAnySignatureTimestamp(line):
@@ -571,7 +586,9 @@ class EditItem:
                 return False
         return False
 
-    def continueSigningGetLineIndex(self, user, shouldBeHandledResult, currenttext):
+    def continueSigningGetLineIndex(
+        self, user: pywikibot.User, shouldBeHandledResult: ShouldBeHandledResult, currenttext: List[str]
+    ) -> int:
         if (
             shouldBeHandledResult.tosignnum < len(currenttext)
             and currenttext[shouldBeHandledResult.tosignnum] == shouldBeHandledResult.tosignstr
@@ -590,7 +607,7 @@ class EditItem:
             return -1
         return tosignindex
 
-    def runWrapped(self, func):
+    def runWrapped(self, func: Callable[[], None]) -> None:
         try:
             startTime = datetime.now()
             func()
@@ -599,10 +616,10 @@ class EditItem:
         except Exception:
             self.error(traceback.format_exc())
 
-    def checkEdit(self):
+    def checkEdit(self) -> None:
         self.runWrapped(self.checkEdit0)
 
-    def checkEdit0(self):
+    def checkEdit0(self) -> None:
         res, self.shouldBeHandledResult = self.changeShouldBeHandled()
         if not res:
             return
@@ -611,11 +628,12 @@ class EditItem:
         if Controller.doEdits:
             self.controller.scheduler.enter(5 * 60, 1, self.continueAferDelay)
 
-    def continueAferDelay(self):
+    def continueAferDelay(self) -> None:
         self.runWrapped(self.continueAferDelay0)
 
-    def continueAferDelay0(self):
+    def continueAferDelay0(self) -> None:
         self.output("Woke up")
+        assert self.shouldBeHandledResult is not None
         while True:
             try:
                 user = pywikibot.User(self.site, self.revInfo.user)
@@ -670,22 +688,22 @@ class EditItem:
                     botflag=False,
                 )
 
-    def isPostscriptum(self, line):
+    def isPostscriptum(self, line: str) -> bool:
         return (
             re.match(r"^(:+\s*)?(PS|P\. ?S\.|Nachtrag|Postscriptum|Notabene|NB|N\. ?B\.):?\s*\S", line, re.I)
             is not None
         )
 
-    def output(self, info):
+    def output(self, info: str) -> None:
         pywikibot.output("%s: %s" % (self.page, info))
 
-    def error(self, info):
+    def error(self, info: str) -> None:
         pywikibot.error("%s: %s" % (self.page, info))
 
-    def warning(self, info):
+    def warning(self, info: str) -> None:
         pywikibot.warning("%s: %s" % (self.page, info))
 
-    def getTags(self):
+    def getTags(self) -> List[str]:
         req = self.site._simple_request(
             action="query",
             prop="revisions",
@@ -712,11 +730,13 @@ class EditItem:
             try:
                 p = res["query"]["pages"]
                 r = p[list(p.keys())[0]]["revisions"]
-                return r[0]["tags"]
+                return cast(List[str], r[0]["tags"])
             except KeyError:
                 return []
 
-    def getSignature(self, tosignstr, user, isAlreadyTimeSigned, isAlreadyUserSigned):
+    def getSignature(
+        self, tosignstr: str, user: pywikibot.User, isAlreadyTimeSigned: bool, isAlreadyUserSigned: bool
+    ) -> str:
         p = ""
         if tosignstr[-1] != " ":
             p = " "
@@ -734,7 +754,7 @@ class EditItem:
         return p + "{{unsigniert|%s%s%s}}" % (user.username, timeInfo, altText)
 
     @staticmethod
-    def getSignatureTimestampString(timestamp):
+    def getSignatureTimestampString(timestamp: int) -> str:
         localizedTime = pytz.utc.localize(pywikibot.Timestamp.utcfromtimestamp(timestamp)).astimezone(EditItem.timezone)
         abbrevDot = "" if localizedTime.month == 5 else "."  # no abbrev dot for Mai
         if os.name == "nt":
@@ -746,13 +766,13 @@ class EditItem:
         else:
             return localizedTime.strftime("%H:%M, %-d. %b" + abbrevDot + " %Y (%Z)")
 
-    def userlink(self, user):
+    def userlink(self, user: pywikibot.User) -> str:
         if user.isAnonymous():
             return "[[Special:Contributions/%s|%s]]" % (user.username, user.username)
         else:
             return "[[User:%s|%s]]" % (user.username, user.username)
 
-    def isUserSigned(self, user, tosignstr):
+    def isUserSigned(self, user: pywikibot.User, tosignstr: str) -> bool:
         for wikilink in pywikibot.link_regex.finditer(pywikibot.textlib.removeDisabledParts(tosignstr)):
             if not wikilink.group("title").strip():
                 continue
@@ -778,10 +798,10 @@ class EditItem:
 
         return False
 
-    def hasAnySignature(self, text):
+    def hasAnySignature(self, text: str) -> bool:
         return self.hasAnySignatureAllowedUserLink(text) and self.hasAnySignatureTimestamp(text)
 
-    def hasAnySignatureAllowedUserLink(self, text):
+    def hasAnySignatureAllowedUserLink(self, text: str) -> bool:
         for wikilink in pywikibot.link_regex.finditer(text):
             if not wikilink.group("title").strip():
                 continue
@@ -798,7 +818,7 @@ class EditItem:
         return False
 
     @staticmethod
-    def hasAnySignatureTimestamp(line):
+    def hasAnySignatureTimestamp(line: str) -> bool:
         return (
             re.search(
                 r"[0-9]{2}:[0-9]{2}, [123]?[0-9]\. (?:Jan\.|Feb\.|Mär\.|Apr\.|Mai|Jun\.|Jul\.|Aug\.|Sep\.|Okt\.|Nov\.|Dez\.) 2[0-9]{3} \((CES?T|MES?Z)\)",
@@ -808,15 +828,16 @@ class EditItem:
         )
 
     @staticmethod
-    def hasUnsignedTemplateForUser(user, line):
+    def hasUnsignedTemplateForUser(user: pywikibot.User, line: str) -> bool:
         match = re.search(r"{{(?:Vorlage:)?(?:unsigniert|unsigned)\|([^|}]+)", line)
         if match:
             if user.isAnonymous():
-                return match.group(1).strip().lower() == user.username.lower()
+                return match.group(1).strip().lower() == cast(str, user.username.lower())
             else:
-                return match.group(1).strip() == user.username
+                return match.group(1).strip() == cast(str, user.username)
+        return False
 
-    def isNotExcludedLine(self, line):
+    def isNotExcludedLine(self, line: int) -> bool:
         # remove non-functional parts and categories
         tempstr = re.sub(r"\[\[[Kk]ategorie:[^\]]+\]\]", "", pywikibot.textlib.removeDisabledParts(line)).strip()
         tempstr = re.sub(r"<br\s*/>", "", tempstr)
@@ -839,30 +860,28 @@ class EditItem:
 
         return True
 
-    def isUserOptOut(self, user):
-        # Check for opt-out {{NoAutosign}} -> True
-        if user in self.controller.useroptout:
-            return True
+    def isUserOptOut(self, user: str) -> bool:
+        return user in self.controller.useroptout
 
-    def isPageOptOut(self, page):
-        return page in self.controller.pageoptout
+    def isPageOptOut(self) -> bool:
+        return self.page.title(insite=True) in self.controller.pageoptout
 
-    def isDiscussion(self, page):
+    def isDiscussion(self) -> bool:
         # TODO: opt-in list
 
         # __NEWSECTIONLINK__ -> True
         if "newsectionlink" in self.page.properties():
             return True
 
-        if page.title() in self.controller.pageoptin:
+        if self.page.title() in self.controller.pageoptin:
             return True
 
-        if page.title().startswith("Wikipedia:Löschkandidaten/"):
+        if self.page.title().startswith("Wikipedia:Löschkandidaten/"):
             return True
 
         return False
 
-    def matchExcludeRegex(self, line):
+    def matchExcludeRegex(self, line: str) -> Optional[str]:
         line = line.replace("_", " ")
         for regex in self.controller.excluderegex:
             reobj = regex.search(line)
@@ -870,7 +889,15 @@ class EditItem:
                 return reobj.group(0)
         return None
 
-    def userPut(self, page, oldtext, newtext, **kwargs):
+    def userPut(
+        self,
+        page: pywikibot.Page,
+        oldtext: str,
+        newtext: str,
+        summary: Optional[str] = None,
+        minor: bool = True,
+        botflag: Optional[bool] = None,
+    ) -> None:
         if oldtext == newtext:
             pywikibot.output("No changes were needed on %s" % page.title(as_link=True))
             return
@@ -878,21 +905,19 @@ class EditItem:
         pywikibot.output("\n\n>>> \03{lightpurple}%s\03{default} <<<" % page.title(as_link=True))
 
         pywikibot.showDiff(oldtext, newtext)
-        if "summary" in kwargs:
-            pywikibot.output("Summary: %s" % kwargs["summary"])
+        if summary:
+            pywikibot.output("Summary: %s" % summary)
 
         page.text = newtext
         try:
-            page.save(**kwargs)
+            page.save(summary=summary, minor=minor, botflag=botflag)
         except pywikibot.EditConflict:
             raise
         except pywikibot.Error as e:
             pywikibot.output("Failed to save %s: %r: %s" % (page.title(as_link=True), e, e))
 
 
-def FaultTolerantLiveRCPageGenerator(site):
-    from pywikibot.comms.eventstreams import site_rc_listener
-
+def FaultTolerantLiveRCPageGenerator(site: pywikibot.BaseSite) -> Iterator[pywikibot.Page]:
     for entry in site_rc_listener(site):
         # The title in a log entry may have been suppressed
         if "title" not in entry and entry["type"] == "log":
@@ -906,7 +931,7 @@ def FaultTolerantLiveRCPageGenerator(site):
         yield page
 
 
-def main():
+def main() -> None:
     locale.setlocale(locale.LC_ALL, "de_DE.utf8")
     pywikibot.handle_args()
     Controller().run()

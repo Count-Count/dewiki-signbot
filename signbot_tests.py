@@ -28,6 +28,7 @@
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
 
+from typing import Tuple, List, Optional
 import datetime
 import locale
 import re
@@ -36,22 +37,22 @@ from urllib.parse import parse_qs, urlparse
 
 import pywikibot
 
-from signbot import EditItem, Controller, RevisionInfo
+from signbot import EditItem, Controller, RevisionInfo, ShouldBeHandledResult
 
 
 class TestSigning(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         locale.setlocale(locale.LC_ALL, "de_DE.utf8")
         super(TestSigning, self).setUp()
         self.controller = Controller()
         Controller.doEdits = False
         Controller.doNotify = False
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         pywikibot.stopme()
         super(TestSigning, self).tearDown()
 
-    def getRevisionInfo(self, pageUrl: str):
+    def getRevisionInfo(self, pageUrl: str) -> Tuple[List[str], RevisionInfo]:
         re.compile("line", re.I)
         queryVars = parse_qs(urlparse(pageUrl).query)
         title = queryVars["title"][0]
@@ -90,46 +91,50 @@ class TestSigning(unittest.TestCase):
             ),
         )
 
-    def shouldBeHandled(self, pageUrl):
+    def shouldBeHandled(self, pageUrl: str) -> Tuple[bool, Optional[ShouldBeHandledResult]]:
         (linesAfterDelay, rev) = self.getRevisionInfo(pageUrl)
         bt = EditItem(self.controller.site, rev, self.controller)
         (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
         user = pywikibot.User(self.controller.site, rev.user)
         if res:
+            assert shouldBeHandledResult is not None
             if bt.continueSigningGetLineIndex(user, shouldBeHandledResult, linesAfterDelay) < 0:
                 return (False, None)
         return (res, shouldBeHandledResult)
 
-    def checkNeedsToBeFullySigned(self, pageUrl):
+    def checkNeedsToBeFullySigned(self, pageUrl: str) -> None:
         (res, shouldBeHandledResult) = self.shouldBeHandled(pageUrl)
         self.assertTrue(res, "Should need full signing but not recognized as unsigned: {}".format(pageUrl))
+        assert shouldBeHandledResult is not None
         self.assertFalse(
             shouldBeHandledResult.isAlreadyTimeSigned, "Should not be timestamp signed but is: %s" % pageUrl
         )
         self.assertFalse(shouldBeHandledResult.isAlreadyUserSigned, "Should not be user signed but is: %s" % pageUrl)
 
-    def checkNeedsUserOnlySigning(self, pageUrl):
+    def checkNeedsUserOnlySigning(self, pageUrl: str) -> None:
         (res, shouldBeHandledResult) = self.shouldBeHandled(pageUrl)
         self.assertTrue(res, "Should need user signing but not recognized as unsigned: {}".format(pageUrl))
+        assert shouldBeHandledResult is not None
         self.assertTrue(
             shouldBeHandledResult.isAlreadyTimeSigned, "Should be timestamp signed but is not: %s" % pageUrl
         )
         self.assertFalse(shouldBeHandledResult.isAlreadyUserSigned, "Should not be user signed but is: %s" % pageUrl)
 
-    def checkNeedsTimestampOnlySigning(self, pageUrl):
+    def checkNeedsTimestampOnlySigning(self, pageUrl: str) -> None:
         (res, shouldBeHandledResult) = self.shouldBeHandled(pageUrl)
         self.assertTrue(res, "Should need timestamp signing but not recognized as unsigned: {}".format(pageUrl))
+        assert shouldBeHandledResult is not None
         self.assertTrue(shouldBeHandledResult.isAlreadyUserSigned, "Should be user signed bot is not: %s" % pageUrl)
         self.assertFalse(
             shouldBeHandledResult.isAlreadyTimeSigned, "Should not be timestamp signed but is: %s" % pageUrl
         )
 
-    def checkDoesNotNeedToBeSigned(self, pageUrl):
+    def checkDoesNotNeedToBeSigned(self, pageUrl: str) -> None:
         (res, _) = self.shouldBeHandled(pageUrl)
         self.assertFalse(res, "Should not need signing by bot but does: %s" % pageUrl)
 
     #    @unittest.skip('disabled')
-    def test_needToBeFullySigned(self):
+    def test_needToBeFullySigned(self) -> None:
         #        self.checkNeedsToBeFullySigned(
         #            # ...
         #            'https://de.wikipedia.org/w/index.php?title=Wikipedia:Administratoren/Notizen&diff=prev&oldid=190236331&diffmode=source')
@@ -147,13 +152,13 @@ class TestSigning(unittest.TestCase):
         )
 
     @unittest.skip("disabled")
-    def test_doNotNeedToBeSignedUnimplemented(self):
+    def test_doNotNeedToBeSignedUnimplemented(self) -> None:
         self.checkDoesNotNeedToBeSigned(
             # Has unclosed link before signature
             "https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Heinz_Schade&diff=prev&oldid=190947403&diffmode=source"
         )
 
-    def test_doNotNeedToBeSigned(self):
+    def test_doNotNeedToBeSigned(self) -> None:
         self.checkDoesNotNeedToBeSigned(
             # Experienced user adds text on own talk page
             "https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Horst_Gr%C3%A4bner&diff=prev&oldid=192065860&diffmode=source"
@@ -245,7 +250,7 @@ class TestSigning(unittest.TestCase):
         )
 
     #    @unittest.skip('disabled')
-    def test_needsUserOnlySigning(self):
+    def test_needsUserOnlySigning(self) -> None:
         self.checkNeedsToBeFullySigned(
             # user not providing link to own page
             "https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Dwarsl%C3%B6per&diff=prev&oldid=189371896&diffmode=source"
@@ -262,13 +267,13 @@ class TestSigning(unittest.TestCase):
         )
 
     #    @unittest.skip('disabled')
-    def test_needsTimestampOnlySigning(self):
+    def test_needsTimestampOnlySigning(self) -> None:
         self.checkNeedsTimestampOnlySigning(
             "https://de.wikipedia.org/w/index.php?title=Portal_Diskussion:Fu%C3%9Fball&diff=prev&oldid=190210122&diffmode=source"
         )
 
     #    @unittest.skip('disabled')
-    def test_allNeedToBeFullySigned(self):
+    def test_allNeedToBeFullySigned(self) -> None:
         text = pywikibot.Page(
             self.controller.site, "Benutzer:CountCountBot/Testcases/Beiträge die komplett nachsigniert werden dürfen"
         ).get(force=True)
@@ -277,7 +282,7 @@ class TestSigning(unittest.TestCase):
             self.checkNeedsToBeFullySigned(match)
 
     #    @unittest.skip('disabled')
-    def test_allDoNotNeedToBeSigned(self):
+    def test_allDoNotNeedToBeSigned(self) -> None:
         text = pywikibot.Page(
             self.controller.site, "Benutzer:CountCountBot/Testcases/Beiträge die nicht nachsigniert werden dürfen"
         ).get(force=True)
@@ -286,7 +291,7 @@ class TestSigning(unittest.TestCase):
             self.checkDoesNotNeedToBeSigned(match)
 
     #    @unittest.skip('disabled')
-    def test_allNeedUserOnlySigning(self):
+    def test_allNeedUserOnlySigning(self) -> None:
         text = pywikibot.Page(
             self.controller.site,
             "Benutzer:CountCountBot/Testcases/Beiträge die als ohne Benutzerinformation nachsigniert werden dürfen",
@@ -296,7 +301,7 @@ class TestSigning(unittest.TestCase):
             self.checkNeedsUserOnlySigning(match)
 
     #    @unittest.skip('disabled')
-    def test_allNeedTimestampOnlySigning(self):
+    def test_allNeedTimestampOnlySigning(self) -> None:
         text = pywikibot.Page(
             self.controller.site,
             "Benutzer:CountCountBot/Testcases/Beiträge die als ohne Zeitstempel nachsigniert werden dürfen",
@@ -306,13 +311,13 @@ class TestSigning(unittest.TestCase):
             self.checkNeedsTimestampOnlySigning(match)
 
     #    @unittest.skip('disabled')
-    def test_timestampMatching(self):
+    def test_timestampMatching(self) -> None:
         date = datetime.datetime.now()
         d = datetime.timedelta(days=1)
         for _ in range(1, 365):
             date += d
             with self.subTest(date=date):
-                s = EditItem.getSignatureTimestampString(date.timestamp())
+                s = EditItem.getSignatureTimestampString(int(date.timestamp()))
                 self.assertTrue(EditItem.hasAnySignatureTimestamp(s), "\nTimestamp does not match regex: {}".format(s))
 
 
