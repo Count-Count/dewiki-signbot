@@ -229,7 +229,7 @@ class Controller(SingleSiteBot):  # type: ignore (SingleSiteBot has not type inf
             and (not change["comment"].startswith("Bot: "))
         ):
             t = EditItem(self.site, RevisionInfo.fromRecentChange(change), self)
-            self.scheduler.enter(0, 1, t.checkEdit)
+            self.scheduler.enter(10, 1, t.checkEdit)
             if datetime.now() - self.lastQueueIdleTime > timedelta(minutes=1):
                 pywikibot.warning(
                     "Queue idle longer than one minute ago: %s, queue depth: %d"
