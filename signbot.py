@@ -210,15 +210,15 @@ class Controller(SingleSiteBot):  # type: ignore (SingleSiteBot has not type inf
 
         if change["namespace"] == 2 and change["title"] == ("Benutzer:CountCountBot/exclude regex"):
             pywikibot.output("exclude regex page changed")
-            threading.Thread(target=self.reloadRegex).start()
+            self.scheduler.enter(10, 1, self.reloadRegex)
 
         elif change["namespace"] == 2 and change["title"] == ("Benutzer:CountCountBot/Opt-Out"):
             pywikibot.output("opt-out page changed")
-            threading.Thread(target=self.reloadOptOut).start()
+            self.scheduler.enter(10, 1, self.reloadOptOut)
 
         elif change["namespace"] == 2 and change["title"] == ("Benutzer:CountCountBot/Opt-In"):
             pywikibot.output("opt-in page changed")
-            threading.Thread(target=self.reloadOptIn).start()
+            self.scheduler.enter(10, 1, self.reloadOptIn)
 
         # Talk page or project page, bot edits excluded
         elif (
