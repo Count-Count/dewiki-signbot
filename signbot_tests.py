@@ -275,7 +275,7 @@ class TestSigning(unittest.TestCase):
     #    @unittest.skip('disabled')
     def test_allNeedToBeFullySigned(self) -> None:
         text = pywikibot.Page(
-            self.controller.site, "Benutzer:CountCountBot/Testcases/Beiträge die komplett nachsigniert werden dürfen"
+            self.controller.site, "Benutzer:SignaturBot/Testcases/Beiträge die komplett nachsigniert werden dürfen"
         ).get(force=True)
         matches = re.compile(r"https://de.wikipedia.org/w/index\.php\?title=[^] \n]+", re.I).findall(text)
         for match in matches:
@@ -284,7 +284,7 @@ class TestSigning(unittest.TestCase):
     #    @unittest.skip('disabled')
     def test_allDoNotNeedToBeSigned(self) -> None:
         text = pywikibot.Page(
-            self.controller.site, "Benutzer:CountCountBot/Testcases/Beiträge die nicht nachsigniert werden dürfen"
+            self.controller.site, "Benutzer:SignaturBot/Testcases/Beiträge die nicht nachsigniert werden dürfen"
         ).get(force=True)
         matches = re.compile(r"https://de.wikipedia.org/w/index\.php\?title=[^] \n]+", re.I).findall(text)
         for match in matches:
@@ -294,7 +294,7 @@ class TestSigning(unittest.TestCase):
     def test_allNeedUserOnlySigning(self) -> None:
         text = pywikibot.Page(
             self.controller.site,
-            "Benutzer:CountCountBot/Testcases/Beiträge die als ohne Benutzerinformation nachsigniert werden dürfen",
+            "Benutzer:SignaturBot/Testcases/Beiträge die als ohne Benutzerinformation nachsigniert werden dürfen",
         ).get(force=True)
         matches = re.compile(r"https://de.wikipedia.org/w/index\.php\?title=[^] \n]+", re.I).findall(text)
         for match in matches:
@@ -304,7 +304,7 @@ class TestSigning(unittest.TestCase):
     def test_allNeedTimestampOnlySigning(self) -> None:
         text = pywikibot.Page(
             self.controller.site,
-            "Benutzer:CountCountBot/Testcases/Beiträge die als ohne Zeitstempel nachsigniert werden dürfen",
+            "Benutzer:SignaturBot/Testcases/Beiträge die als ohne Zeitstempel nachsigniert werden dürfen",
         ).get(force=True)
         matches = re.compile(r"https://de.wikipedia.org/w/index\.php\?title=[^] \n]+", re.I).findall(text)
         for match in matches:
