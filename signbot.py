@@ -150,7 +150,7 @@ class Controller(SingleSiteBot):  # type: ignore (SingleSiteBot has not type inf
     doNotify = os.name != "nt"
 
     def __init__(self) -> None:
-        site = pywikibot.Site(user="CountCountBot")
+        site = pywikibot.Site(user="SignaturBot")
         monkey_patch(site)
         super(Controller, self).__init__(site=site)
         self.reloadRegex()
@@ -208,15 +208,15 @@ class Controller(SingleSiteBot):  # type: ignore (SingleSiteBot has not type inf
         if os.name != "nt":
             signal.alarm(TIMEOUT)  # pylint: disable=E1101
 
-        if change["namespace"] == 2 and change["title"] == ("Benutzer:CountCountBot/exclude regex"):
+        if change["namespace"] == 2 and change["title"] == ("Benutzer:SignaturBot/exclude regex"):
             pywikibot.output("exclude regex page changed")
             self.scheduler.enter(10, 1, self.reloadRegex)
 
-        elif change["namespace"] == 2 and change["title"] == ("Benutzer:CountCountBot/Opt-Out"):
+        elif change["namespace"] == 2 and change["title"] == ("Benutzer:SignaturBot/Opt-Out"):
             pywikibot.output("opt-out page changed")
             self.scheduler.enter(10, 1, self.reloadOptOut)
 
-        elif change["namespace"] == 2 and change["title"] == ("Benutzer:CountCountBot/Opt-In"):
+        elif change["namespace"] == 2 and change["title"] == ("Benutzer:SignaturBot/Opt-In"):
             pywikibot.output("opt-in page changed")
             self.scheduler.enter(10, 1, self.reloadOptIn)
 
@@ -247,7 +247,7 @@ class Controller(SingleSiteBot):  # type: ignore (SingleSiteBot has not type inf
         # We do not directly assign to self.controller.excluderegex right
         # now to avoid issues with multi-threading
         lst = []
-        repage = pywikibot.Page(self.site, "User:CountCountBot/exclude_regex")
+        repage = pywikibot.Page(self.site, "User:SignaturBot/exclude_regex")
         for line in repage.get(force=True).split("\n"):
             line = line.strip()
             if line and not line.startswith("#"):
@@ -257,7 +257,7 @@ class Controller(SingleSiteBot):  # type: ignore (SingleSiteBot has not type inf
 
     def reloadOptOut(self) -> None:
         pywikibot.output("Reloading optout list")
-        optoutPage = pywikibot.Page(self.site, "User:CountCountBot/Opt-Out")
+        optoutPage = pywikibot.Page(self.site, "User:SignaturBot/Opt-Out")
         newuseroptout = set()
         newpageoptout = set()
         for wikilink in pywikibot.link_regex.finditer(
@@ -279,7 +279,7 @@ class Controller(SingleSiteBot):  # type: ignore (SingleSiteBot has not type inf
 
     def reloadOptIn(self) -> None:
         pywikibot.output("Reloading optin list")
-        optinPage = pywikibot.Page(self.site, "User:CountCountBot/Opt-In")
+        optinPage = pywikibot.Page(self.site, "User:SignaturBot/Opt-In")
         newpageoptin = set()
         for wikilink in pywikibot.link_regex.finditer(pywikibot.textlib.removeDisabledParts(optinPage.get(force=True))):
             if not wikilink.group("title").strip():
@@ -677,7 +677,7 @@ class EditItem:
                 talktext = ""
 
             talktext += "{{subst:Unterschreiben}}"
-            #            if self.page.title().startswith('Benutzer Diskussion:CountCountBot/'):
+            #            if self.page.title().startswith('Benutzer Diskussion:SignaturBot/'):
             if Controller.doEdits:
                 self.userPut(
                     talk,
