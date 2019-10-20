@@ -879,6 +879,9 @@ class EditItem:
         if self.page.title().startswith("Wikipedia:Löschkandidaten/"):
             return True
 
+        if self.page.title().startswith("Wikipedia:Qualitätssicherung/"):
+            return True
+
         return False
 
     def matchExcludeRegex(self, line: str) -> Optional[str]:
