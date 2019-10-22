@@ -404,7 +404,12 @@ class EditItem:
         if self.revInfo.type == "new":
             old_text = ""
         else:
-            old_text = self.page.getOldVersion(self.revInfo.oldRevision)
+            try:
+                old_text = self.page.getOldVersion(self.revInfo.oldRevision)
+            except KeyError:
+                self.warning("Old revision %d not found, retrying..." % self.revInfo.oldRevision)
+                time.sleep(10)
+                old_text = self.page.getOldVersion(self.revInfo.oldRevision)
 
         try:
             new_text = self.page.getOldVersion(self.revInfo.newRevision)
