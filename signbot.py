@@ -616,7 +616,7 @@ class EditItem:
         try:
             startTime = datetime.now()
             func()
-            if datetime.now() - startTime > timedelta(seconds=15):
+            if datetime.now() - startTime > timedelta(seconds=60):
                 self.warning("Execution elapsed %s" % (str(datetime.now() - startTime)))
         except Exception:
             self.error(traceback.format_exc())
