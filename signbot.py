@@ -184,7 +184,7 @@ class Controller(SingleSiteBot):  # type: ignore (SingleSiteBot has not type inf
 
     def skip_page(self, page: pywikibot.Page) -> bool:
         """Skip special/media pages"""
-        if page.namespace().id < 0:
+        if page.namespace() < 0:
             return True
         elif not page.exists():
             return True
