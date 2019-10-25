@@ -122,7 +122,7 @@ class RevisionInfo:
 
     def __init__(
         self,
-        namespace: str,
+        namespace: int,
         title: str,
         edittype: str,
         bot: bool,
@@ -842,7 +842,7 @@ class EditItem:
                 return match.group(1).strip() == cast(str, user.username)
         return False
 
-    def isNotExcludedLine(self, line: int) -> bool:
+    def isNotExcludedLine(self, line: str) -> bool:
         # remove non-functional parts and categories
         tempstr = re.sub(r"\[\[[Kk]ategorie:[^\]]+\]\]", "", pywikibot.textlib.removeDisabledParts(line)).strip()
         tempstr = re.sub(r"<br\s*/>", "", tempstr)
