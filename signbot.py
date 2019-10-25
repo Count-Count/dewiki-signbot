@@ -357,20 +357,20 @@ class EditItem:
         self.output("Handling")
 
         if self.isPageOptOut():
-            self.output("Page %s on opt-out list" % self.page.title(insite=True))
+            self.output("Page %s on opt-out list" % self.page.title())
             return False, None
 
         if (
-            self.page.title(insite=True).find("/Archiv/") > 0
-            or self.page.title(insite=True).find("/Archiv ") > 0
-            or self.page.title(insite=True).endswith("/Archiv")
+            self.page.title().find("/Archiv/") > 0
+            or self.page.title().find("/Archiv ") > 0
+            or self.page.title().endswith("/Archiv")
         ):
             self.output("Suspected archive page")
             return False, None
 
-        if self.page.title(insite=True).startswith("Portal Diskussion:") and (
-            self.page.title(insite=True).endswith("/Artikel des Monats")
-            or self.page.title(insite=True).endswith("/Neue Artikel")
+        if self.page.title().startswith("Portal Diskussion:") and (
+            self.page.title().endswith("/Artikel des Monats")
+            or self.page.title().endswith("/Neue Artikel")
         ):
             return False, None
 
@@ -869,7 +869,7 @@ class EditItem:
         return user in self.controller.useroptout
 
     def isPageOptOut(self) -> bool:
-        return self.page.title(insite=True) in self.controller.pageoptout
+        return self.page.title() in self.controller.pageoptout
 
     def isDiscussion(self) -> bool:
         # TODO: opt-in list
