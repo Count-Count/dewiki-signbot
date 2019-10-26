@@ -32,7 +32,7 @@
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
 
-from typing import Any, Dict, Tuple, List, Optional, cast, Iterator, Callable, Pattern
+from typing import Any, Tuple, List, Optional, cast, Iterator, Callable, Pattern
 from datetime import datetime
 from datetime import timedelta
 import os
