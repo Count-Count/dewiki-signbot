@@ -107,7 +107,7 @@ def on_timeout(signum: Any, frame: Any) -> None:
 
 class RevisionInfo:
     @staticmethod
-    def fromRecentChange(change: Dict[str, Any]) -> "RevisionInfo":
+    def fromRecentChange(change: "pywikibot.mypy.RecentChangesInfo") -> "RevisionInfo":
         return RevisionInfo(
             change["namespace"],
             change["title"],
@@ -143,7 +143,7 @@ class RevisionInfo:
         self.timestamp = timestamp
 
 
-class Controller(SingleSiteBot):  # type: ignore (SingleSiteBot has not type information)
+class Controller(SingleSiteBot):
     """The Signbot class."""
 
     doEdits = True
@@ -190,7 +190,7 @@ class Controller(SingleSiteBot):  # type: ignore (SingleSiteBot has not type inf
             return True
         elif page.isRedirectPage():
             return True
-        return cast(bool, super().skip_page(page))
+        return super().skip_page(page)
 
     def run(self) -> None:
         self.lastQueueIdleTime = datetime.now()
@@ -345,7 +345,7 @@ class ShouldBeHandledResult:
 class EditItem:
     timezone = pytz.timezone("Europe/Berlin")
 
-    def __init__(self, site: pywikibot.BaseSite, revInfo: RevisionInfo, controller: Controller):
+    def __init__(self, site: pywikibot.site.BaseSite, revInfo: RevisionInfo, controller: Controller):
         self.site = site
         self.revInfo = revInfo
         self.controller = controller
@@ -838,9 +838,9 @@ class EditItem:
         match = re.search(r"{{(?:Vorlage:)?(?:unsigniert|unsigned)\|([^|}]+)", line)
         if match:
             if user.isAnonymous():
-                return match.group(1).strip().lower() == cast(str, user.username.lower())
+                return match.group(1).strip().lower() == user.username.lower()
             else:
-                return match.group(1).strip() == cast(str, user.username)
+                return match.group(1).strip() == user.username
         return False
 
     def isNotExcludedLine(self, line: str) -> bool:
@@ -926,7 +926,7 @@ class EditItem:
             pywikibot.output("Failed to save %s: %r: %s" % (page.title(as_link=True), e, e))
 
 
-def FaultTolerantLiveRCPageGenerator(site: pywikibot.BaseSite) -> Iterator[pywikibot.Page]:
+def FaultTolerantLiveRCPageGenerator(site: pywikibot.site.BaseSite) -> Iterator[pywikibot.Page]:
     for entry in site_rc_listener(site):
         # The title in a log entry may have been suppressed
         if "title" not in entry and entry["type"] == "log":
