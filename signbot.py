@@ -312,7 +312,7 @@ class Controller(SingleSiteBot):
             return False
         reset = int(time.time()) + 60 * 60 * 24 * 30
         key = self.getKey(user)
-        p = self.redis.pipeline()  # type: ignore (typeshed stub is missing Pipeline class definition)
+        p = self.redis.pipeline()  # type: ignore
         p.incr(key)
         p.expireat(key, reset + 10)
         limitReached = p.execute()[0] >= 3
@@ -329,7 +329,7 @@ class Controller(SingleSiteBot):
         if user.isAnonymous():
             return
         key = self.getKey(user)
-        p = self.redis.pipeline()  # type: ignore (typeshed stub is missing Pipeline class definition)
+        p = self.redis.pipeline()  # type: ignore
         p.delete(key)
         p.execute()
 
