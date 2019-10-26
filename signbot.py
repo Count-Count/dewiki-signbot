@@ -32,6 +32,7 @@
 # along with self program.  If not, see <http://www.gnu.org/licenses/>
 #
 
+from dataclasses import dataclass
 from typing import Any, Tuple, List, Optional, cast, Iterator, Callable, Pattern
 from datetime import datetime
 from datetime import timedelta
@@ -104,8 +105,18 @@ class ReadingRecentChangesTimeoutError(Exception):
 def on_timeout(signum: Any, frame: Any) -> None:
     raise ReadingRecentChangesTimeoutError
 
-
+@dataclass
 class RevisionInfo:
+    namespace: int
+    title: str
+    type: str
+    bot: bool
+    comment: str
+    user: str
+    oldRevision: Optional[int]
+    newRevision: int
+    timestamp: int
+
     @staticmethod
     def fromRecentChange(change: "pywikibot.mypy.RecentChangesInfo") -> "RevisionInfo":
         return RevisionInfo(
@@ -119,28 +130,6 @@ class RevisionInfo:
             change["revision"]["new"],
             change["timestamp"],
         )
-
-    def __init__(
-        self,
-        namespace: int,
-        title: str,
-        edittype: str,
-        bot: bool,
-        comment: str,
-        user: str,
-        oldRevision: Optional[int],
-        newRevision: int,
-        timestamp: int,
-    ) -> None:
-        self.namespace = namespace
-        self.title = title
-        self.bot = bot
-        self.type = edittype  # 'edit' or 'new' or ...
-        self.comment = comment
-        self.user = user
-        self.newRevision = newRevision
-        self.oldRevision = oldRevision
-        self.timestamp = timestamp
 
 
 class Controller(SingleSiteBot):
