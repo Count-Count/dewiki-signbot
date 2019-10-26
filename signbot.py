@@ -128,7 +128,7 @@ class RevisionInfo:
         bot: bool,
         comment: str,
         user: str,
-        oldRevision: int,
+        oldRevision: Optional[int],
         newRevision: int,
         timestamp: int,
     ) -> None:
@@ -404,6 +404,7 @@ class EditItem:
         if self.revInfo.type == "new":
             old_text = ""
         else:
+            assert self.revInfo.oldRevision is not None
             try:
                 old_text = self.page.getOldVersion(self.revInfo.oldRevision)
             except KeyError:
