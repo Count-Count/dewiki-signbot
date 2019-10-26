@@ -5,6 +5,7 @@ import pywikibot
 class Page:
     text: str
     _rcinfo: pywikibot.mypy.RecentChangesInfo
+    _revisions: Dict[int, "Revision"]
     def __init__(
         self, source: Union[pywikibot.site.BaseSite, pywikibot.Page], title: str = "", ns: int = 0
     ) -> None: ...
@@ -62,3 +63,17 @@ class Link(BaseLink):
     def parse(self) -> None: ...
     def ns_title(self, onsite: Optional[pywikibot.site.BaseSite] = None) -> str: ...
 
+class Revision:
+    revid: int
+    text: Optional[str]
+    timestamp: pywikibot.Timestamp
+    user: str
+    anon: bool
+    comment: str
+    minor: bool
+    roolbacktoken: str
+    _parent_id: Optional[int]
+    _content_model: str
+    _sha1: str
+    @property
+    def parent_id(self) -> int: ...

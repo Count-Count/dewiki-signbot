@@ -79,7 +79,7 @@ class TestSigning(unittest.TestCase):
         return (
             linesAfterDelay,
             RevisionInfo(
-                page.namespace(),
+                page.namespace().id,
                 page.title(),
                 "new" if oldRevId == 0 else "edit",
                 False,
@@ -87,7 +87,7 @@ class TestSigning(unittest.TestCase):
                 newRevision.user,
                 oldRevId,
                 revId,
-                (newRevision.timestamp - epoch).total_seconds(),
+                int((newRevision.timestamp - epoch).total_seconds()),
             ),
         )
 
