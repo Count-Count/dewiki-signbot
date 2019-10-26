@@ -8,6 +8,7 @@ mypy = "*"
 pylint = "*"
 flake8 = "*"
 black = "*"
+flake8-pyi = "*"
 
 [packages]
 redis = "*"
