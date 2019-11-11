@@ -1,0 +1,3 @@
+[submodule "stubs"]
+	path = stubs
+	url = https://github.com/Count-Count/pywikibot-typestubs.git
