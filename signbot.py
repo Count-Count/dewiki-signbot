@@ -317,8 +317,7 @@ class EditItem:
             return False, None
 
         if self.page.title().startswith("Portal Diskussion:") and (
-            self.page.title().endswith("/Artikel des Monats")
-            or self.page.title().endswith("/Neue Artikel")
+            self.page.title().endswith("/Artikel des Monats") or self.page.title().endswith("/Neue Artikel")
         ):
             return False, None
 
