@@ -51,48 +51,7 @@ from redis import Redis
 import pywikibot
 from pywikibot.bot import SingleSiteBot
 from pywikibot.diff import PatchManager
-from pywikibot.site import PageInUse
 from pywikibot.comms.eventstreams import site_rc_listener
-
-
-# https://gerrit.wikimedia.org/r/#/c/pywikibot/core/+/525179/
-def monkey_patch(site: Any) -> None:
-    def lock_page(self: Any, page: Any, block: bool = True) -> None:
-        """
-        Lock page for writing. Must be called before writing any page.
-        We don't want different threads trying to write to the same page
-        at the same time, even to different sections.
-        @param page: the page to be locked
-        @type page: pywikibot.Page
-        @param block: if true, wait until the page is available to be locked;
-            otherwise, raise an exception if page can't be locked
-        """
-        title = page.title(with_section=False)
-
-        self._pagemutex.acquire()
-        try:
-            while title in self._locked_pages:
-                if not block:
-                    raise PageInUse(title)
-
-                # The mutex must be released so that page can be unlocked
-                self._pagemutex.release()
-                time.sleep(0.25)
-                self._pagemutex.acquire()
-
-            self._locked_pages.append(title)
-        finally:
-            # time.sleep may raise an exception from signal handler (eg:
-            # KeyboardInterrupt) while the lock is released, and there is no
-            # reason to acquire the lock again given that our caller will
-            # receive the exception. The state of the lock is therefore
-            # undefined at the point of this finally block.
-            try:
-                self._pagemutex.release()
-            except RuntimeError:
-                pass
-
-    site.__class__.lock_page = lock_page
 
 
 TIMEOUT = 600  # We expect at least one rc entry every 10 minutes
@@ -104,6 +63,7 @@ class ReadingRecentChangesTimeoutError(Exception):
 
 def on_timeout(signum: Any, frame: Any) -> None:
     raise ReadingRecentChangesTimeoutError
+
 
 @dataclass
 class RevisionInfo:
@@ -140,7 +100,6 @@ class Controller(SingleSiteBot):
 
     def __init__(self) -> None:
         site = pywikibot.Site(user="SignaturBot")
-        monkey_patch(site)
         super(Controller, self).__init__(site=site)
         self.reloadRegex()
         self.reloadOptOut()
