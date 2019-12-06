@@ -52,7 +52,7 @@ class TestSigning(unittest.TestCase):
         pywikibot.stopme()
         super(TestSigning, self).tearDown()
 
-    def getRevisionInfo(self, pageUrl: str) -> Tuple[List[str], RevisionInfo]:
+    def getRevisionInfo(self, pageUrl: str) -> Tuple[int, List[str], RevisionInfo]:
         re.compile("line", re.I)
         queryVars = parse_qs(urlparse(pageUrl).query)
         title = queryVars["title"][0]
@@ -77,6 +77,7 @@ class TestSigning(unittest.TestCase):
         oldRevId = newRevision.parent_id
         linesAfterDelay = page.getOldVersion(lastRevInWindow).split("\n")
         return (
+            lastRevInWindow,
             linesAfterDelay,
             RevisionInfo(
                 page.namespace().id,
@@ -92,13 +93,13 @@ class TestSigning(unittest.TestCase):
         )
 
     def shouldBeHandled(self, pageUrl: str) -> Tuple[bool, Optional[ShouldBeHandledResult]]:
-        (linesAfterDelay, rev) = self.getRevisionInfo(pageUrl)
+        (revAfterDelay, linesAfterDelay, rev) = self.getRevisionInfo(pageUrl)
         bt = EditItem(self.controller.site, rev, self.controller)
         (res, shouldBeHandledResult) = bt.changeShouldBeHandled()
         user = pywikibot.User(self.controller.site, rev.user)
         if res:
             assert shouldBeHandledResult is not None
-            if bt.continueSigningGetLineIndex(user, shouldBeHandledResult, linesAfterDelay) < 0:
+            if bt.continueSigningGetLineIndex(user, shouldBeHandledResult, linesAfterDelay, revAfterDelay) < 0:
                 return (False, None)
         return (res, shouldBeHandledResult)
 
@@ -159,6 +160,10 @@ class TestSigning(unittest.TestCase):
         )
 
     def test_doNotNeedToBeSigned(self) -> None:
+        self.checkDoesNotNeedToBeSigned(
+            # Edit reverted during five minute delay.
+            "https://de.wikipedia.org/w/index.php?title=Wikipedia_Diskussion:Verhalten_im_Notfall&diff=prev&oldid=194469869&diffmode=source"
+        )
         self.checkDoesNotNeedToBeSigned(
             # Experienced user adds text on own talk page
             "https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:Horst_Gr%C3%A4bner&diff=prev&oldid=192065860&diffmode=source"

@@ -540,8 +540,22 @@ class EditItem:
         return False
 
     def continueSigningGetLineIndex(
-        self, user: pywikibot.User, shouldBeHandledResult: ShouldBeHandledResult, currenttext: List[str]
+        self,
+        user: pywikibot.User,
+        shouldBeHandledResult: ShouldBeHandledResult,
+        currenttext: List[str],
+        latestRevisionId: int,
     ) -> int:
+        if latestRevisionId != self.revInfo.newRevision:
+            # check edits which have occurred since unsigned edit for revert
+            revs = self.getRevisions(latestRevisionId, self.revInfo.newRevision)
+            for rev in revs:
+                if (
+                    rev["revid"] != self.revInfo.newRevision
+                    and ("mw-rollback" in rev["tags"] or "mw-undo" in rev["tags"])
+                    and self.isUserSigned(user, rev["comment"])
+                ):
+                    return -1
         if (
             shouldBeHandledResult.tosignnum < len(currenttext)
             and currenttext[shouldBeHandledResult.tosignnum] == shouldBeHandledResult.tosignstr
@@ -591,7 +605,9 @@ class EditItem:
             try:
                 user = pywikibot.User(self.site, self.revInfo.user)
                 currenttext = self.page.get(force=True).split("\n")
-                tosignindex = self.continueSigningGetLineIndex(user, self.shouldBeHandledResult, currenttext)
+                tosignindex = self.continueSigningGetLineIndex(
+                    user, self.shouldBeHandledResult, currenttext, self.page.latest_revision_id
+                )
                 if tosignindex < 0:
                     return
                 currenttext[tosignindex] += self.getSignature(
@@ -656,24 +672,30 @@ class EditItem:
     def warning(self, info: str) -> None:
         pywikibot.warning("%s: %s" % (self.page, info))
 
-    def getTags(self) -> List[str]:
+    def getRevisions(self, rvstartid: int, rvendid: int):
         req = self.site._simple_request(
             action="query",
             prop="revisions",
             titles=self.page,
-            rvprop="tags",
-            rvstartid=self.revInfo.newRevision,
-            rvendid=self.revInfo.newRevision,
+            rvprop="ids|timestamp|flags|comment|user|tags|flagged",
+            rvstartid=rvstartid,
+            rvendid=rvendid,
             rvlimit=1,
         )
+        res = req.submit()
+        pages = res["query"]["pages"]
+        revisions = pages[list(pages.keys())[0]]["revisions"]
+        return revisions
+
+    def getTags(self) -> List[str]:
         try:
             try:
-                res = req.submit()
+                r = self.getRevisions(self.revInfo.newRevision, self.revInfo.newRevision)
             except pywikibot.data.api.APIError as e:
                 if e.code == "badid_rvstartid":
                     self.output("getTags() rvstartid not found. Retrying... ")
                     time.sleep(10)
-                    res = req.submit()
+                    r = self.getRevisions(self.revInfo.newRevision, self.revInfo.newRevision)
                 else:
                     raise
         except Exception as e:
@@ -681,8 +703,6 @@ class EditItem:
             return []
         else:
             try:
-                p = res["query"]["pages"]
-                r = p[list(p.keys())[0]]["revisions"]
                 return cast(List[str], r[0]["tags"])
             except KeyError:
                 return []
