@@ -758,7 +758,7 @@ class EditItem:
             if user.isAnonymous():
                 if link.namespace != -1:
                     continue
-                if link.title != "Beiträge/" + user.username:
+                if link.title != "Beiträge/" + user.username and link.title != "Contributions/" + user.username:
                     continue
             else:
                 if link.namespace == -1 and link.title == "Beiträge/" + user.username:
