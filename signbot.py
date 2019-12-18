@@ -341,7 +341,10 @@ class EditItem:
 
         if (
             self.page.namespace() == pywikibot.site.Namespace.USER_TALK
-            and self.page.title(with_ns=False) == user.username
+            and (
+                self.page.title(with_ns=False) == user.username
+                or self.page.title(with_ns=False).startswith(user.username + "/")
+            )
             and self.controller.isExperiencedUser(user)
         ):
             self.output("Experienced user %s edited own talk page" % user.username)

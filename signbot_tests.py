@@ -161,6 +161,10 @@ class TestSigning(unittest.TestCase):
 
     def test_doNotNeedToBeSigned(self) -> None:
         self.checkDoesNotNeedToBeSigned(
+            # Edit of experienced user on subpage in own user talk namespace.
+            "https://de.wikipedia.org/w/index.php?title=Benutzer_Diskussion:KuK/Zwischenlager&diff=prev&oldid=194997990&diffmode=source"
+        )
+        self.checkDoesNotNeedToBeSigned(
             # Edit reverted during five minute delay.
             "https://de.wikipedia.org/w/index.php?title=Wikipedia_Diskussion:Verhalten_im_Notfall&diff=prev&oldid=194469869&diffmode=source"
         )
