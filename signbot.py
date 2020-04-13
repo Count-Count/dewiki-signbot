@@ -33,7 +33,7 @@
 #
 
 from dataclasses import dataclass
-from typing import Any, Tuple, List, Optional, cast, Iterator, Callable, Pattern
+from typing import Any, Tuple, List, Optional, cast, Iterator, Callable, Pattern, Dict
 from datetime import datetime
 from datetime import timedelta
 import os
@@ -675,7 +675,7 @@ class EditItem:
     def warning(self, info: str) -> None:
         pywikibot.warning("%s: %s" % (self.page, info))
 
-    def getRevisions(self, rvstartid: int, rvendid: int):
+    def getRevisions(self, rvstartid: int, rvendid: int) -> List[Dict[str, Any]]:
         req = self.site._simple_request(
             action="query",
             prop="revisions",
@@ -688,7 +688,7 @@ class EditItem:
         res = req.submit()
         pages = res["query"]["pages"]
         revisions = pages[list(pages.keys())[0]]["revisions"]
-        return revisions
+        return cast(List[Dict[str, Any]], revisions)
 
     def getTags(self) -> List[str]:
         try:
