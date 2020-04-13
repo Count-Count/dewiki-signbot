@@ -683,7 +683,7 @@ class EditItem:
             rvprop="ids|timestamp|flags|comment|user|tags|flagged",
             rvstartid=rvstartid,
             rvendid=rvendid,
-            rvlimit=1,
+            rvlimit=500,
         )
         res = req.submit()
         pages = res["query"]["pages"]
