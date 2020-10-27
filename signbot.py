@@ -153,6 +153,12 @@ class Controller(SingleSiteBot):
         """Process a single Page object from stream."""
         change = page._rcinfo
 
+        ts = datetime.fromtimestamp(change["timestamp"])
+
+        if datetime.now() - ts > timedelta(minutes=5):
+            pywikibot.warning("Change too old: %s" % (str(datetime.now() - ts)))
+            return
+
         if os.name != "nt":
             signal.alarm(TIMEOUT)  # pylint: disable=E1101
 
