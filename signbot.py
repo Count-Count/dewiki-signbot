@@ -774,7 +774,9 @@ class EditItem:
                 if link.title != "Beiträge/" + user.username and link.title != "Contributions/" + user.username:
                     continue
             else:
-                if link.namespace == -1 and link.title == "Beiträge/" + user.username:
+                if link.namespace == -1 and (
+                    link.title == "Beiträge/" + user.username or link.title == "Contributions/" + user.username
+                ):
                     return True
                 if link.namespace != 2 and link.namespace != 3:
                     continue
