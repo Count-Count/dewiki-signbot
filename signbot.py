@@ -375,9 +375,13 @@ class EditItem:
             time.sleep(10)
             new_text = self.page.getOldVersion(self.revInfo.newRevision)
 
+        if old_text and not old_text.endswith("\n"):
+            old_text += "\n"
+        if not new_text.endswith("\n"):
+            new_text += "\n"
         new_lines = new_text.split("\n")
-        diff = PatchManager(old_text.split("\n") if old_text else [], new_lines, by_letter=True)
-        #        diff.print_hunks()
+        diff = PatchManager(old_text, new_text)
+        # diff.print_hunks()
 
         tosignstr = ""
         tosignnum = -1
@@ -404,7 +408,7 @@ class EditItem:
             if tag == "insert":
                 insertStartLine = j1
                 for j in range(j1, j2):
-                    line = hunk.b[j]
+                    line = hunk.b[j][:-1]  # strip trailing newline
                     if self.page == user.getUserTalkPage() or self.page.title().startswith(
                         user.getUserTalkPage().title() + "/"
                     ):
