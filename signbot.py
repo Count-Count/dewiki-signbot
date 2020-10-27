@@ -127,8 +127,8 @@ class Controller(SingleSiteBot):
     def setup(self) -> None:
         """Setup the bot."""
         if os.name != "nt":
-            signal.signal(signal.SIGALRM, on_timeout)  # pylint: disable=E1101
-            signal.alarm(TIMEOUT)  # pylint: disable=E1101
+            signal.signal(signal.SIGALRM, on_timeout)  # type: ignore # pylint: disable=E1101
+            signal.alarm(TIMEOUT)  # type: ignore # pylint: disable=E1101
 
     def skip_page(self, page: pywikibot.Page) -> bool:
         """Skip special/media pages"""
@@ -160,7 +160,7 @@ class Controller(SingleSiteBot):
             return
 
         if os.name != "nt":
-            signal.alarm(TIMEOUT)  # pylint: disable=E1101
+            signal.alarm(TIMEOUT)  # type: ignore # pylint: disable=E1101
 
         if change["namespace"] == 2 and change["title"] == ("Benutzer:SignaturBot/exclude regex"):
             pywikibot.output("exclude regex page changed")
@@ -398,6 +398,8 @@ class EditItem:
 
         signatureTimestampCount = 0
 
+        insertStartLine = None
+
         for tag, _, _, j1, j2 in group:
             if tag == "insert":
                 insertStartLine = j1
@@ -442,6 +444,8 @@ class EditItem:
         if not tosignstr:
             self.output("No inserts")
             return False, None
+
+        assert insertStartLine  # set if tosignstr is set
 
         if signatureTimestampCount > 1:
             self.output("Multiple timestamps found")
@@ -772,7 +776,7 @@ class EditItem:
             else:
                 if link.namespace == -1 and link.title == "Beiträge/" + user.username:
                     return True
-                if link.namespace not in [2, 3]:
+                if link.namespace != 2 and link.namespace != 3:
                     continue
                 if link.title != user.username:
                     continue
@@ -793,7 +797,7 @@ class EditItem:
             except pywikibot.Error:
                 continue
             # Certain Bot signatures lead to subpages sometimes
-            if link.namespace in [2, 3] and link.title.find("/") == -1:
+            if (link.namespace == 2 or link.namespace == 3) and link.title.find("/") == -1:
                 return True
             if link.namespace == -1 and link.title.startswith("Beiträge/"):
                 return True
