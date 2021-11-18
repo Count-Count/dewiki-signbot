@@ -100,6 +100,7 @@ class Controller(SingleSiteBot):
 
     def __init__(self) -> None:
         site = pywikibot.Site(user="SignaturBot")
+        site.login()
         super(Controller, self).__init__(site=site)
         self.reloadRegex()
         self.reloadOptOut()
