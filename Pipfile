@@ -14,6 +14,7 @@ flake8-pyi = "*"
 redis = "*"
 pytz = "*"
 pywikibot = "*"
+wikitextparser = "*"
 
 [requires]
 python_version = "3.8"
