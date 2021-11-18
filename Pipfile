@@ -9,6 +9,8 @@ pylint = "*"
 flake8 = "*"
 black = "*"
 flake8-pyi = "*"
+types-redis = "*"
+types-pytz = "*"
 
 [packages]
 redis = "*"
