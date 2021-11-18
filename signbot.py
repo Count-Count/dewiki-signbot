@@ -267,7 +267,7 @@ class Controller(SingleSiteBot):
             return False
         reset = int(time.time()) + 60 * 60 * 24 * 30
         key = self.getKey(user)
-        p = self.redis.pipeline()  # type: ignore
+        p = self.redis.pipeline()
         p.incr(key)
         p.expireat(key, reset + 10)
         limitReached = p.execute()[0] >= 3
@@ -284,7 +284,7 @@ class Controller(SingleSiteBot):
         if user.isAnonymous():
             return
         key = self.getKey(user)
-        p = self.redis.pipeline()  # type: ignore
+        p = self.redis.pipeline()
         p.delete(key)
         p.execute()
 
