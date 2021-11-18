@@ -223,7 +223,7 @@ class Controller(SingleSiteBot):
             try:
                 link = pywikibot.Link(wikilink.group("title"), source=self.site)
                 link.parse()
-            except pywikibot.Error:
+            except pywikibot.exceptions.Error:
                 continue
             if link.namespace == 2:
                 newuseroptout.add(link.title.strip())
@@ -242,7 +242,7 @@ class Controller(SingleSiteBot):
             try:
                 link = pywikibot.Link(wikilink.group("title"), source=self.site)
                 link.parse()
-            except pywikibot.Error:
+            except pywikibot.exceptions.Error:
                 continue
             if link.namespace != 0:
                 newpageoptin.add(link.ns_title(onsite=self.site).strip())
@@ -645,10 +645,10 @@ class EditItem:
                 if Controller.doEdits:
                     self.userPut(self.page, self.page.get(), "\n".join(currenttext), summary=summary, botflag=False)
                 break
-            except pywikibot.EditConflict:
+            except pywikibot.exceptions.EditConflictError:
                 self.output("Edit conflict - retrying...")
                 continue
-            except pywikibot.NoPage:
+            except pywikibot.exceptions.NoPageError:
                 self.output("Page ceased to exist.")
                 return
 
@@ -660,7 +660,7 @@ class EditItem:
                 talk = talk.getRedirectTarget()
             try:
                 talktext = talk.get(force=True, get_redirect=True) + "\n\n"
-            except pywikibot.NoPage:
+            except pywikibot.exceptions.NoPageError:
                 talktext = ""
 
             talktext += "{{subst:Unterschreiben}}"
@@ -709,7 +709,7 @@ class EditItem:
         try:
             try:
                 r = self.getRevisions(self.revInfo.newRevision, self.revInfo.newRevision)
-            except pywikibot.data.api.APIError as e:
+            except pywikibot.exceptions.APIError as e:
                 if e.code == "badid_rvstartid":
                     self.output("getTags() rvstartid not found. Retrying... ")
                     time.sleep(10)
@@ -770,7 +770,7 @@ class EditItem:
             try:
                 link = pywikibot.Link(wikilink.group("title"), source=self.site)
                 link.parse()
-            except pywikibot.Error:
+            except pywikibot.exceptions.Error:
                 continue
             #            if link.site != self.site: continue
             if user.isAnonymous():
@@ -801,7 +801,7 @@ class EditItem:
             try:
                 link = pywikibot.Link(wikilink.group("title"), source=self.site)
                 link.parse()
-            except pywikibot.Error:
+            except pywikibot.exceptions.Error:
                 continue
             # Certain Bot signatures lead to subpages sometimes
             if (link.namespace == 2 or link.namespace == 3) and link.title.find("/") == -1:
@@ -907,9 +907,9 @@ class EditItem:
         page.text = newtext
         try:
             page.save(summary=summary, minor=minor, botflag=botflag)
-        except pywikibot.EditConflict:
+        except pywikibot.exceptions.EditConflictError:
             raise
-        except pywikibot.Error as e:
+        except pywikibot.exceptions.Error as e:
             pywikibot.output("Failed to save %s: %r: %s" % (page.title(as_link=True), e, e))
 
 
